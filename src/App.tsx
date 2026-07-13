@@ -2,9 +2,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { AuthProvider } from '@/components/auth/AuthProvider'
+import { Toaster } from '@/components/ui/toaster'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import Pos from '@/pages/Pos'
+import Products from '@/pages/Products'
 import Inventory from '@/pages/Inventory'
 import Production from '@/pages/Production'
 import HR from '@/pages/HR'
@@ -40,6 +43,9 @@ function AppRoutes() {
         <Route path="/pos" element={
           <ProtectedRoute allowedRoles={['owner', 'cashier']}><Pos /></ProtectedRoute>
         } />
+        <Route path="/products" element={
+          <ProtectedRoute allowedRoles={['owner']}><Products /></ProtectedRoute>
+        } />
         <Route path="/inventory" element={
           <ProtectedRoute allowedRoles={['owner', 'staff']}><Inventory /></ProtectedRoute>
         } />
@@ -70,8 +76,11 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppRoutes />
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </BrowserRouter>
+      <Toaster />
     </QueryClientProvider>
   )
 }

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
   ShoppingCart,
+  Croissant,
   Package,
   Factory,
   Users,
@@ -28,6 +29,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['owner'] },
   { label: 'nav.pos', path: '/pos', icon: ShoppingCart, roles: ['owner', 'cashier'] },
+  { label: 'nav.products', path: '/products', icon: Croissant, roles: ['owner'] },
   { label: 'nav.inventory', path: '/inventory', icon: Package, roles: ['owner', 'staff'] },
   { label: 'nav.production', path: '/production', icon: Factory, roles: ['owner', 'staff'] },
   { label: 'nav.hr', path: '/hr', icon: Users, roles: ['owner'] },

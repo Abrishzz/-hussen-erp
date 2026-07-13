@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UserPlus, ClipboardCheck, Wallet } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 
 export default function HR() {
   const { t } = useTranslation()

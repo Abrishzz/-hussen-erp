@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { FileBarChart, FileText, BarChart3 } from 'lucide-react'
+import { FileText, BarChart3 } from 'lucide-react'
 
 export default function Reports() {
   const { t } = useTranslation()
