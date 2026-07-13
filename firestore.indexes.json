@@ -9,13 +9,6 @@
       ]
     },
     {
-      "collectionGroup": "sales",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "timestamp", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "stockMovements",
       "queryScope": "COLLECTION",
       "fields": [
@@ -29,13 +22,6 @@
       "fields": [
         { "fieldPath": "type", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "productionBatches",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "date", "order": "DESCENDING" }
       ]
     },
     {

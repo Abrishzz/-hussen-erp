@@ -43,11 +43,28 @@ app at the emulators. The Emulator UI is at http://localhost:4000.
 
 ## Production (real Firebase)
 
-1. Create a Firebase project and copy `.env.example` to `.env`, filling in the real values.
-2. Set `VITE_USE_EMULATORS=false` (or remove it) so the app talks to the real backend.
-3. Assign roles via custom claims (the `onUserCreated` Cloud Function sets a role
-   from the user's `/users` doc; the owner can manage roles from there).
-4. `npm run build` then `firebase deploy`.
+The app is deployed to Vercel at **https://hussen-erp.vercel.app** (project
+`hussenerp`). Firebase config is set as Vercel env vars with `VITE_USE_EMULATORS=false`.
+
+To (re)deploy the frontend: `vercel --prod`.
+To deploy security rules/indexes: `firebase deploy --only firestore:rules,firestore:indexes`.
+
+### Seed the real project (users with roles + catalog)
+
+Assigning role custom claims requires Admin privileges, so this uses a service
+account key that stays on your machine:
+
+1. Firebase console → Project settings → Service accounts → **Generate new private key**.
+2. Run:
+   ```bash
+   GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/key.json \
+   GCLOUD_PROJECT=hussenerp \
+   npm run seed:prod
+   ```
+
+This creates the three demo users (owner/cashier/staff, password `password123`)
+with the correct roles and seeds products, raw materials, suppliers, and settings —
+after which the login page's quick-login buttons work live. The script is idempotent.
 
 ## Scripts
 
