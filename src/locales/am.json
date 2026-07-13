@@ -78,7 +78,14 @@
     "loginTitle": "ወደ ሁሴን ዳቦ ቤት ኢአርፒ ግባ",
     "loginSubtitle": "ለመቀጠል የምዝገባ መረጃዎን ያስገቡ",
     "invalidCredentials": "ልክ ያልሆነ ኢሜይል ወይም የይለፍ ቃል",
-    "sessionExpired": "ክፍለ ጊዜ አልቋል። እባክዎ እንደገና ይግቡ።"
+    "sessionExpired": "ክፍለ ጊዜ አልቋል። እባክዎ እንደገና ይግቡ።",
+    "demoAccounts": "ፈጣን መግቢያ — የሙከራ መለያዎች",
+    "orDivider": "ወይም",
+    "roles": {
+      "owner": "ባለቤት",
+      "cashier": "ካሽየር",
+      "staff": "ዳቦ ሰሪ"
+    }
   },
   "products": {
     "title": "ምርቶች",

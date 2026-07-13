@@ -9,3 +9,4 @@ lib/
 *.tsbuildinfo
 
 .vercel
+.env*

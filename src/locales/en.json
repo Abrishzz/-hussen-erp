@@ -78,7 +78,14 @@
     "loginTitle": "Sign in to Hussen Bakery ERP",
     "loginSubtitle": "Enter your credentials to continue",
     "invalidCredentials": "Invalid email or password",
-    "sessionExpired": "Session expired. Please login again."
+    "sessionExpired": "Session expired. Please login again.",
+    "demoAccounts": "Quick login — demo accounts",
+    "orDivider": "or",
+    "roles": {
+      "owner": "Owner",
+      "cashier": "Cashier",
+      "staff": "Baker / Staff"
+    }
   },
   "products": {
     "title": "Products",
