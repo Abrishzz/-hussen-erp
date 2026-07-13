@@ -8,9 +8,17 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper function to check role
+    // Role from the user's /users doc (falls back to the custom claim, which the
+    // emulator/admin seed sets). This lets roles be managed as data in production
+    // without requiring Admin custom-claim writes.
+    function docRole() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : '';
+    }
+
     function hasRole(role) {
-      return isAuthenticated() && request.auth.token.role == role;
+      return isAuthenticated() && (request.auth.token.role == role || docRole() == role);
     }
 
     function isOwner() {
@@ -23,6 +31,12 @@ service cloud.firestore {
 
     function isStaff() {
       return hasRole('staff');
+    }
+
+    // A user can read their own /users doc (needed for client-side role
+    // resolution). Writes are owner-only (via the top-level rule).
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
     }
 
     // Owner has full access to everything
