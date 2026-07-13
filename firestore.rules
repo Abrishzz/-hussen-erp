@@ -1,0 +1,120 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check role
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.role == role;
+    }
+
+    function isOwner() {
+      return hasRole('owner');
+    }
+
+    function isCashier() {
+      return hasRole('cashier');
+    }
+
+    function isStaff() {
+      return hasRole('staff');
+    }
+
+    // Owner has full access to everything
+    match /{document=**} {
+      allow read, write: if isOwner();
+    }
+
+    // === SALES COLLECTION ===
+    match /sales/{saleId} {
+      // Cashier: read/write own sales; read all products
+      allow read: if isCashier();
+      allow create: if isCashier() && request.resource.data.cashierId == request.auth.uid;
+      allow update: if isCashier() && resource.data.cashierId == request.auth.uid;
+      allow delete: if false; // Only owner can delete via their own rules
+
+      // Staff: read only (to see production demand)
+      allow read: if isStaff();
+    }
+
+    // === PRODUCTS COLLECTION ===
+    match /products/{productId} {
+      // Cashier & Staff: read only
+      allow read: if isCashier() || isStaff();
+      // Owner: full access (already covered by top-level rule)
+    }
+
+    // === RAW MATERIALS COLLECTION ===
+    match /rawMaterials/{materialId} {
+      allow read: if isStaff() || isCashier();
+      // Write: staff can update stock, owner full
+      allow create, update: if isStaff();
+    }
+
+    // === STOCK MOVEMENTS COLLECTION ===
+    match /stockMovements/{movId} {
+      allow read: if isStaff() || isCashier();
+      allow create: if isStaff();
+      allow update: if isStaff();
+    }
+
+    // === SUPPLIERS COLLECTION ===
+    match /suppliers/{supplierId} {
+      allow read: if isStaff() || isCashier();
+      allow write: if isStaff();
+    }
+
+    // === RECIPES COLLECTION ===
+    match /recipes/{recipeId} {
+      allow read: if isStaff() || isCashier();
+      allow write: if isStaff();
+    }
+
+    // === PRODUCTION BATCHES COLLECTION ===
+    match /productionBatches/{batchId} {
+      allow read: if isStaff() || isCashier();
+      allow create, update: if isStaff();
+    }
+
+    // === FINISHED GOODS COLLECTION ===
+    match /finishedGoods/{productId} {
+      allow read: if isStaff() || isCashier();
+      allow write: if isStaff();
+    }
+
+    // === EMPLOYEES COLLECTION ===
+    match /employees/{empId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner();
+    }
+
+    // === ATTENDANCE COLLECTION ===
+    match /attendance/{recordId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner();
+    }
+
+    // === EXPENSES COLLECTION ===
+    match /expenses/{expId} {
+      allow read: if isOwner();
+      allow write: if isOwner();
+    }
+
+    // === PAYROLL COLLECTION ===
+    match /payroll/{payId} {
+      allow read: if isOwner();
+      allow write: if isOwner();
+    }
+
+    // === SETTINGS COLLECTION ===
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner();
+    }
+  }
+}

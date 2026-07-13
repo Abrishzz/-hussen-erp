@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-ethiopic: 'Noto Sans Ethiopic', sans-serif;
+  --color-primary: #c0392b;
+  --color-primary-dark: #a93226;
+  --color-primary-light: #e74c3c;
+  --color-gold: #f39c12;
+  --color-gold-dark: #d68910;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-ethiopic {
+  font-family: var(--font-ethiopic);
+}
