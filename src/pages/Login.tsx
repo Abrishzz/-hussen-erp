@@ -6,8 +6,7 @@ import { auth } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Store, Languages, ShieldCheck, ShoppingCart, ChefHat, ChevronRight } from 'lucide-react'
+import { Store, Languages, ShieldCheck, ShoppingCart, ChefHat, ChevronRight, TrendingUp } from 'lucide-react'
 import { roleHome } from '@/components/auth/ProtectedRoute'
 import type { UserRole } from '@/types'
 
@@ -17,7 +16,6 @@ interface DemoUser {
   icon: React.ElementType
 }
 
-// Curated demo accounts (all seeded with the same password) for one-tap sign-in.
 const DEMO_PASSWORD = 'password123'
 const DEMO_USERS: DemoUser[] = [
   { email: 'owner@hussenbakery.com', role: 'owner', icon: ShieldCheck },
@@ -61,22 +59,90 @@ export default function Login() {
     await signIn(user.email, DEMO_PASSWORD, roleHome(user.role))
   }
 
-  const toggleLang = () => {
-    i18n.changeLanguage(i18n.language === 'en' ? 'am' : 'en')
-  }
+  const toggleLang = () => i18n.changeLanguage(i18n.language === 'en' ? 'am' : 'en')
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-            <Store className="h-6 w-6 text-primary-foreground" />
+    <div className="flex min-h-screen bg-background">
+      {/* Brand / chart panel */}
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-800 p-12 text-white lg:flex">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-fuchsia-400/20 blur-3xl" />
+
+        <div className="relative flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+            <Store className="h-6 w-6" />
           </div>
-          <CardTitle className="text-xl">{t('auth.loginTitle')}</CardTitle>
-          <CardDescription>{t('auth.loginSubtitle')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <span className="text-xl font-bold tracking-tight">{t('app.name')}</span>
+        </div>
+
+        <div className="relative space-y-8">
+          <div className="space-y-3">
+            <h1 className="text-4xl font-bold leading-tight">
+              Run your bakery,<br />beautifully.
+            </h1>
+            <p className="max-w-sm text-white/70">
+              Sales, inventory, production, HR and finance — one modern dashboard, full of insights.
+            </p>
+          </div>
+
+          {/* Decorative analytics card */}
+          <div className="max-w-sm rounded-3xl bg-white/10 p-6 backdrop-blur-md ring-1 ring-white/15">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-white/60">Monthly Revenue</p>
+                <p className="text-2xl font-bold">ETB 128.4k</p>
+              </div>
+              <span className="flex items-center gap-1 rounded-full bg-emerald-400/20 px-2.5 py-1 text-xs font-medium text-emerald-200">
+                <TrendingUp className="h-3.5 w-3.5" /> +12.8%
+              </span>
+            </div>
+            <svg viewBox="0 0 320 90" className="h-24 w-full" preserveAspectRatio="none">
+              {[28, 46, 34, 60, 40, 72, 54, 82, 66, 90].map((h, i) => (
+                <rect
+                  key={i}
+                  x={i * 32 + 6}
+                  y={90 - h}
+                  width="18"
+                  height={h}
+                  rx="6"
+                  className="fill-white/80"
+                  opacity={0.35 + (h / 90) * 0.65}
+                />
+              ))}
+            </svg>
+          </div>
+        </div>
+
+        <div className="relative flex gap-8 text-sm">
+          <div>
+            <p className="text-2xl font-bold">99.9%</p>
+            <p className="text-white/60">Uptime</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold">2×</p>
+            <p className="text-white/60">Faster checkout</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold">EN · አማ</p>
+            <p className="text-white/60">Bilingual</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Form panel */}
+      <div className="flex w-full items-center justify-center p-6 lg:w-1/2">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+              <Store className="h-6 w-6" />
+            </div>
+            <span className="text-lg font-bold">{t('app.name')}</span>
+          </div>
+
+          <h2 className="text-2xl font-bold">{t('auth.loginTitle')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('auth.loginSubtitle')}</p>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
@@ -85,6 +151,7 @@ export default function Login() {
                 placeholder="admin@hussenbakery.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="h-11"
                 required
               />
             </div>
@@ -95,19 +162,19 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="h-11"
                 required
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="h-11 w-full text-base" disabled={loading}>
               {loading && !pendingEmail ? t('common.loading') : t('auth.login')}
             </Button>
           </form>
 
-          {/* Quick login — demo accounts */}
-          <div className="mt-6">
+          <div className="mt-7">
             <div className="relative mb-3 text-center">
-              <span className="relative z-10 bg-card px-3 text-xs uppercase tracking-wide text-muted-foreground">
+              <span className="relative z-10 bg-background px-3 text-xs uppercase tracking-wide text-muted-foreground">
                 {t('auth.demoAccounts')}
               </span>
               <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-border" />
@@ -119,33 +186,33 @@ export default function Login() {
                   type="button"
                   disabled={loading}
                   onClick={() => handleQuickLogin(user)}
-                  className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary hover:bg-accent disabled:opacity-60"
+                  className="group flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left transition-all hover:border-primary hover:shadow-card disabled:opacity-60"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                     <user.icon className="h-5 w-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium">{t(`auth.roles.${user.role}`)}</span>
+                    <span className="block text-sm font-semibold">{t(`auth.roles.${user.role}`)}</span>
                     <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
                   </span>
                   {pendingEmail === user.email ? (
                     <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   ) : (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                   )}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="mt-4 text-center">
+          <div className="mt-6 text-center">
             <Button variant="ghost" size="sm" onClick={toggleLang}>
               <Languages className="mr-2 h-4 w-4" />
               {i18n.language === 'en' ? 'Amharic' : 'English'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

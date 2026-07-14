@@ -4,51 +4,74 @@
 
 /* ── Design tokens (light) ─────────────────────────────────────────────── */
 :root {
-  --background: #faf9f7;
-  --foreground: #1c1917;
+  --background: #f2f3fb;
+  --foreground: #1b1a2e;
   --card: #ffffff;
-  --card-foreground: #1c1917;
+  --card-foreground: #1b1a2e;
   --popover: #ffffff;
-  --popover-foreground: #1c1917;
-  --primary: #c0392b;
+  --popover-foreground: #1b1a2e;
+  --primary: #6366f1;
   --primary-foreground: #ffffff;
-  --secondary: #f4f1ec;
-  --secondary-foreground: #292524;
-  --muted: #f4f1ec;
-  --muted-foreground: #78716c;
-  --accent: #f1ece3;
-  --accent-foreground: #292524;
-  --destructive: #dc2626;
+  --secondary: #eceefb;
+  --secondary-foreground: #2f2d4e;
+  --muted: #eef0f8;
+  --muted-foreground: #7c7b95;
+  --accent: #e9ebfe;
+  --accent-foreground: #4338ca;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e7e2da;
-  --input: #e7e2da;
-  --ring: #c0392b;
-  --gold: #f39c12;
-  --radius: 0.625rem;
+  --border: #e7e8f4;
+  --input: #e3e4f0;
+  --ring: #6366f1;
+  --radius: 1rem;
+
+  /* Sidebar (dark navy in both themes) */
+  --sidebar: #171531;
+  --sidebar-foreground: #b7b6d4;
+  --sidebar-muted: #6f6d97;
+  --sidebar-active: #6366f1;
+  --sidebar-active-foreground: #ffffff;
+
+  /* Chart palette */
+  --chart-1: #6366f1;
+  --chart-2: #a5b4fc;
+  --chart-3: #8b5cf6;
+  --chart-4: #22c55e;
+  --chart-5: #f59e0b;
+  --gold: #f59e0b;
+
+  --shadow-card: 0 6px 30px -12px rgba(49, 46, 129, 0.18);
 }
 
 /* ── Design tokens (dark) ──────────────────────────────────────────────── */
 .dark {
-  --background: #1a1613;
-  --foreground: #f5f3f0;
-  --card: #241f1b;
-  --card-foreground: #f5f3f0;
-  --popover: #241f1b;
-  --popover-foreground: #f5f3f0;
-  --primary: #e74c3c;
+  --background: #131226;
+  --foreground: #ecebf5;
+  --card: #1c1b33;
+  --card-foreground: #ecebf5;
+  --popover: #1c1b33;
+  --popover-foreground: #ecebf5;
+  --primary: #7c7ff5;
   --primary-foreground: #ffffff;
-  --secondary: #2d2723;
-  --secondary-foreground: #f5f3f0;
-  --muted: #2d2723;
-  --muted-foreground: #a8a29e;
-  --accent: #362f29;
-  --accent-foreground: #f5f3f0;
-  --destructive: #ef4444;
+  --secondary: #262544;
+  --secondary-foreground: #ecebf5;
+  --muted: #242341;
+  --muted-foreground: #9d9cc0;
+  --accent: #2b2a4d;
+  --accent-foreground: #c7c9ff;
+  --destructive: #f26d6d;
   --destructive-foreground: #ffffff;
-  --border: #362f29;
-  --input: #362f29;
-  --ring: #e74c3c;
-  --gold: #f5b041;
+  --border: #2c2b4d;
+  --input: #2c2b4d;
+  --ring: #7c7ff5;
+
+  --sidebar: #100f22;
+  --sidebar-foreground: #a9a8c9;
+  --sidebar-muted: #6b6994;
+  --sidebar-active: #6366f1;
+  --sidebar-active-foreground: #ffffff;
+
+  --shadow-card: 0 6px 30px -12px rgba(0, 0, 0, 0.5);
 }
 
 /* ── Map tokens to Tailwind color utilities ────────────────────────────── */
@@ -73,6 +96,16 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-gold: var(--gold);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-ethiopic: 'Noto Sans Ethiopic', sans-serif;
 }
@@ -91,6 +124,11 @@
   }
 }
 
+/* Soft elevated card shadow */
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
 .font-ethiopic {
   font-family: var(--font-ethiopic);
 }
@@ -100,4 +138,10 @@ input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* Thin scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
