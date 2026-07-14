@@ -1,221 +1,381 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { jsPDF } from 'jspdf'
-import { Download, BarChart3 } from 'lucide-react'
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from 'recharts'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+  useSales, useRawMaterials, useProductionBatches,
+  useExpenses,
+} from '@/hooks/useData'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { useCollection, orderBy } from '@/hooks/useFirestore'
-import { formatCurrency } from '@/lib/utils'
-import type { Sale, Expense, RawMaterial } from '@/types'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Download } from 'lucide-react'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart as RePieChart, Pie, Cell, LineChart, Line, CartesianGrid,
+} from 'recharts'
+import {
+  exportSalesReportPDF, exportInventoryReportPDF,
+  exportExpenseReportPDF, exportProfitLossPDF,
+} from '@/lib/reports'
 
-function tsToDate(ts: unknown): Date {
-  if (ts && typeof ts === 'object' && 'seconds' in ts) return new Date((ts as { seconds: number }).seconds * 1000)
-  return new Date()
-}
+
+const COLORS = ['#c0392b', '#f39c12', '#27ae60', '#2980b9', '#8e44ad', '#e67e22', '#1abc9c']
 
 export default function Reports() {
   const { t, i18n } = useTranslation()
-  const isAm = i18n.language === 'am'
-  const { data: sales } = useCollection<Sale>('sales', [orderBy('timestamp', 'desc')])
-  const { data: expenses } = useCollection<Expense>('expenses')
-  const { data: materials } = useCollection<RawMaterial>('rawMaterials')
+  const today = new Date().toISOString().split('T')[0]
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+  const [from, setFrom] = useState(thirtyDaysAgo)
+  const [to, setTo] = useState(today)
 
-  const today = new Date()
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-  const [from, setFrom] = useState(monthStart.toISOString().slice(0, 10))
-  const [to, setTo] = useState(today.toISOString().slice(0, 10))
+  const { data: sales } = useSales()
+  const { data: materials } = useRawMaterials()
+  const { data: batches } = useProductionBatches()
+  const { data: expenses } = useExpenses()
 
-  const range = useMemo(() => {
-    const start = new Date(from)
-    start.setHours(0, 0, 0, 0)
-    const end = new Date(to)
-    end.setHours(23, 59, 59, 999)
-    return { start, end }
-  }, [from, to])
 
-  const inRange = (d: Date) => d >= range.start && d <= range.end
+  const filteredSales = sales?.filter((s) => {
+    const d = s.timestamp?.toDate?.() || new Date(s.timestamp as unknown as string)
+    return d >= new Date(from) && d <= new Date(to + 'T23:59:59')
+  }) || []
 
-  const report = useMemo(() => {
-    const completed = (sales ?? []).filter((s) => s.status === 'completed' && inRange(tsToDate(s.timestamp)))
-    const revenue = completed.reduce((s, x) => s + (x.total || 0), 0)
-    const orders = completed.length
-    const rangeExpenses = (expenses ?? []).filter((e) => inRange(tsToDate(e.date)))
-    const expenseTotal = rangeExpenses.reduce((s, e) => s + (e.amount || 0), 0)
+  const filteredExpenses = expenses?.filter((e) => {
+    const d = e.date?.toDate?.() || new Date((e.date as unknown as {seconds: number}).seconds * 1000)
+    return d >= new Date(from) && d <= new Date(to + 'T23:59:59')
+  }) || []
 
-    const productMap = new Map<string, { name: string; qty: number; revenue: number }>()
-    for (const s of completed) {
-      for (const it of s.items || []) {
-        const name = isAm ? it.name_am || it.name_en : it.name_en
-        const e = productMap.get(it.productId) ?? { name, qty: 0, revenue: 0 }
-        e.qty += it.quantity
-        e.revenue += it.total
-        productMap.set(it.productId, e)
-      }
-    }
-    const bestSellers = Array.from(productMap.values()).sort((a, b) => b.qty - a.qty).slice(0, 8)
+  const revenue = filteredSales.reduce((s, x) => s + x.total, 0)
+  const totalExp = filteredExpenses.reduce((s, x) => s + x.amount, 0)
+  const grossProfit = revenue
+  const netProfit = grossProfit - totalExp
 
-    const expenseByCat = new Map<string, number>()
-    for (const e of rangeExpenses) expenseByCat.set(e.category, (expenseByCat.get(e.category) ?? 0) + e.amount)
+  // Sales chart data (by day)
+  const salesByDay: Record<string, number> = {}
+  filteredSales.forEach((s) => {
+    const d = formatDate(s.timestamp)
+    salesByDay[d] = (salesByDay[d] || 0) + s.total
+  })
+  const salesChartData = Object.entries(salesByDay).map(([date, total]) => ({ date, total: total / 100 }))
 
-    return { revenue, orders, expenseTotal, net: revenue - expenseTotal, bestSellers, expenseByCat }
-  }, [sales, expenses, from, to, isAm])
+  // Best sellers
+  const productCounts: Record<string, { name: string; qty: number }> = {}
+  filteredSales.forEach((s) => s.items.forEach((i) => {
+    if (!productCounts[i.productId]) productCounts[i.productId] = { name: i.name_en, qty: 0 }
+    productCounts[i.productId].qty += i.quantity
+  }))
+  const topSellers = Object.values(productCounts).sort((a, b) => b.qty - a.qty).slice(0, 7)
+  const bestSellerData = topSellers.map((item) => ({ name: item.name, value: item.qty }))
 
-  const stockValue = (materials ?? []).reduce((s, m) => s + m.currentQty * m.avgCost, 0)
-
-  const exportPdf = () => {
-    const doc = new jsPDF()
-    doc.setFontSize(16)
-    doc.text('Hussen Bakery — Report', 14, 18)
-    doc.setFontSize(10)
-    doc.text(`${from} → ${to}`, 14, 26)
-    const rows: [string, string][] = [
-      [t('finance.revenue'), formatCurrency(report.revenue)],
-      [t('pos.orderCount'), String(report.orders)],
-      [t('finance.expenses'), formatCurrency(report.expenseTotal)],
-      [t('finance.netProfit'), formatCurrency(report.net)],
-      [t('inventory.stockValue'), formatCurrency(stockValue)],
-    ]
-    let y = 40
-    for (const [k, v] of rows) { doc.text(k, 14, y); doc.text(v, 120, y); y += 9 }
-    y += 4
-    doc.setFontSize(12); doc.text(t('reports.bestSellers'), 14, y); y += 8
-    doc.setFontSize(10)
-    for (const b of report.bestSellers) { doc.text(`${b.name}`, 14, y); doc.text(`${b.qty}`, 120, y); doc.text(formatCurrency(b.revenue), 150, y); y += 8 }
-    doc.save(`report-${from}-${to}.pdf`)
-  }
-
-  const summary = [
-    { label: t('finance.revenue'), value: formatCurrency(report.revenue) },
-    { label: t('pos.orderCount'), value: String(report.orders) },
-    { label: t('finance.expenses'), value: formatCurrency(report.expenseTotal) },
-    { label: t('finance.netProfit'), value: formatCurrency(report.net) },
-  ]
+  // Expense breakdown
+  const byCategory: Record<string, number> = {}
+  filteredExpenses.forEach((e) => {
+    byCategory[e.category] = (byCategory[e.category] || 0) + e.amount
+  })
+  const expenseChartData = Object.entries(byCategory).map(([cat, amt]) => ({
+    name: t(`finance.categories.${cat}`) || cat,
+    value: amt / 100,
+  }))
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+    <ErrorBoundary>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-2xl font-bold">{t('reports.title')}</h1>
-          <p className="text-muted-foreground">{t('reports.dateRange')}</p>
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">{t('common.from')}</Label>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9" />
+          <div className="flex items-center gap-2">
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-36" />
+            <span className="text-muted-foreground">{t('reports.to')}</span>
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-36" />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">{t('common.to')}</Label>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9" />
-          </div>
-          <Button onClick={exportPdf}>
-            <Download className="mr-2 h-4 w-4" />
-            {t('reports.exportPdf')}
-          </Button>
         </div>
+
+        <Tabs defaultValue="sales">
+          <TabsList className="flex-wrap">
+            <TabsTrigger value="sales">{t('reports.salesReport')}</TabsTrigger>
+            <TabsTrigger value="inventory">{t('reports.inventoryReport')}</TabsTrigger>
+            <TabsTrigger value="production">{t('reports.productionReport')}</TabsTrigger>
+            <TabsTrigger value="expenses">{t('reports.expenseReport')}</TabsTrigger>
+            <TabsTrigger value="profit">{t('reports.profitLoss')}</TabsTrigger>
+            <TabsTrigger value="bestsellers">{t('reports.bestSellers')}</TabsTrigger>
+          </TabsList>
+
+          {/* ─── Sales Report ─── */}
+          <TabsContent value="sales">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{t('reports.salesReport')}</CardTitle>
+                <Button size="sm" variant="outline" onClick={() => exportSalesReportPDF(filteredSales, from, to, i18n.language)}>
+                  <Download className="mr-1 h-4 w-4" /> PDF
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-3 mb-6">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-sm text-muted-foreground">{t('common.total')}</p>
+                    <p className="text-xl font-bold">{formatCurrency(revenue)}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-sm text-muted-foreground">{t('pos.orderCount')}</p>
+                    <p className="text-xl font-bold">{filteredSales.length}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-sm text-muted-foreground">{t('common.average')}</p>
+                    <p className="text-xl font-bold">
+                      {filteredSales.length ? formatCurrency(Math.round(revenue / filteredSales.length)) : 'ETB 0'}
+                    </p>
+                  </div>
+                </div>
+                {salesChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={salesChartData}>
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: unknown) => `ETB ${Number(v).toFixed(2)}`} />
+                      <Bar dataKey="total" fill="#c0392b" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── Inventory Report ─── */}
+          <TabsContent value="inventory">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{t('reports.inventoryReport')}</CardTitle>
+                <Button size="sm" variant="outline" onClick={() => exportInventoryReportPDF(materials || [], i18n.language)}>
+                  <Download className="mr-1 h-4 w-4" /> PDF
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-3 mb-6">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-sm text-muted-foreground">{t('common.total')}</p>
+                    <p className="text-xl font-bold">{materials?.length || 0}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-sm text-muted-foreground">{t('inventory.stockValue')}</p>
+                    <p className="text-xl font-bold">
+                      {formatCurrency(materials?.reduce((s, m) => s + m.currentQty * m.avgCost, 0) || 0)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-sm text-muted-foreground">{t('inventory.lowStockAlert')}</p>
+                    <p className="text-xl font-bold text-destructive">
+                      {materials?.filter((m) => m.currentQty <= m.reorderLevel).length || 0}
+                    </p>
+                  </div>
+                </div>
+                {materials && materials.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={materials.map((m) => ({ name: m.name_en, stock: m.currentQty, reorder: m.reorderLevel }))}>
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Bar dataKey="stock" fill="#27ae60" name="Current Stock" />
+                      <Bar dataKey="reorder" fill="#e74c3c" name="Reorder Level" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── Production Report ─── */}
+          <TabsContent value="production">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('reports.productionReport')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {batches && batches.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-3 mb-4">
+                      <div className="rounded-lg border p-3">
+                        <p className="text-sm text-muted-foreground">{t('common.total')}</p>
+                        <p className="text-xl font-bold">{batches.length}</p>
+                      </div>
+                      <div className="rounded-lg border p-3">
+                        <p className="text-sm text-muted-foreground">{t('production.plannedQty')}</p>
+                        <p className="text-xl font-bold">{batches.reduce((s, b) => s + b.plannedQty, 0)}</p>
+                      </div>
+                      <div className="rounded-lg border p-3">
+                        <p className="text-sm text-muted-foreground">{t('production.actualQty')}</p>
+                        <p className="text-xl font-bold">{batches.reduce((s, b) => s + b.actualQty, 0)}</p>
+                      </div>
+                    </div>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={batches.slice(0, 20).map((b) => ({
+                        name: b.productName_en.substring(0, 15),
+                        planned: b.plannedQty,
+                        actual: b.actualQty,
+                      }))}>
+                        <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="planned" fill="#f39c12" name="Planned" />
+                        <Bar dataKey="actual" fill="#27ae60" name="Actual" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── Expense Report ─── */}
+          <TabsContent value="expenses">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{t('reports.expenseReport')}</CardTitle>
+                <Button size="sm" variant="outline" onClick={() => exportExpenseReportPDF(filteredExpenses, from, to, i18n.language)}>
+                  <Download className="mr-1 h-4 w-4" /> PDF
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 mb-6">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-sm text-muted-foreground">{t('common.total')}</p>
+                    <p className="text-xl font-bold">{formatCurrency(totalExp)}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-sm text-muted-foreground">{t('common.count')}</p>
+                    <p className="text-xl font-bold">{filteredExpenses.length}</p>
+                  </div>
+                </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {expenseChartData.length > 0 ? (
+                    <>
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">{t('common.breakdown')}</h4>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <RePieChart>
+                            <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                              {expenseChartData.map((_, idx) => (
+                                <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                              ))}
+                            </Pie>
+                          <Tooltip formatter={(v: unknown) => `ETB ${Number(v).toFixed(2)}`} />
+                        </RePieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="space-y-2">
+                        {expenseChartData.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2">
+                              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                              {item.name}
+                            </span>
+                            <span className="font-medium">ETB {item.value.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="py-12 text-center text-muted-foreground col-span-2">{t('reports.noData')}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── Profit & Loss ─── */}
+          <TabsContent value="profit">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{t('reports.profitLoss')}</CardTitle>
+                <Button size="sm" variant="outline"
+                  onClick={() => exportProfitLossPDF(revenue, 0, totalExp, from, to, i18n.language)}>
+                  <Download className="mr-1 h-4 w-4" /> PDF
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="max-w-md mx-auto space-y-4">
+                  <div className="flex justify-between text-sm pb-2 border-b">
+                    <span className="text-muted-foreground">{t('finance.revenue')}</span>
+                    <span className="font-medium">{formatCurrency(revenue)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm pb-2 border-b">
+                    <span className="text-muted-foreground">{t('finance.costOfGoodsSold')}</span>
+                    <span className="font-medium">{formatCurrency(0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm pb-2 border-b">
+                    <span className="font-medium">{t('finance.grossProfit')}</span>
+                    <span className="font-medium text-green-600">{formatCurrency(grossProfit)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm pb-2 border-b">
+                    <span className="text-muted-foreground">{t('finance.operatingExpenses')}</span>
+                    <span className="font-medium text-destructive">{formatCurrency(totalExp)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold pt-2">
+                    <span>{t('finance.netProfit')}</span>
+                    <span className={netProfit >= 0 ? 'text-green-600' : 'text-destructive'}>
+                      {formatCurrency(netProfit)}
+                    </span>
+                  </div>
+                </div>
+                {salesChartData.length > 0 && (
+                  <div className="mt-8">
+                    <h4 className="text-sm font-medium mb-3">{t('dashboard.todaySales')} {t('common.trend')}</h4>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <LineChart data={salesChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip formatter={(v: unknown) => `ETB ${Number(v).toFixed(2)}`} />
+                        <Line type="monotone" dataKey="total" stroke="#c0392b" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── Best Sellers ─── */}
+          <TabsContent value="bestsellers">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('reports.bestSellers')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {bestSellerData.length > 0 ? (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={bestSellerData} layout="vertical">
+                        <XAxis type="number" />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={120} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#c0392b" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RePieChart>
+                        <Pie data={bestSellerData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                          {bestSellerData.map((_, idx) => (
+                            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </RePieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {summary.map((s) => (
-          <Card key={s.label}>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">{s.label}</CardTitle></CardHeader>
-            <CardContent><div className="text-2xl font-bold">{s.value}</div></CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle className="text-lg">{t('reports.bestSellers')}</CardTitle></CardHeader>
-          <CardContent className="h-72">
-            {report.bestSellers.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-muted-foreground">
-                <BarChart3 className="mr-2 h-6 w-6" />{t('reports.noData')}
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={report.bestSellers} layout="vertical" margin={{ left: 8, right: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                  <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
-                  <Tooltip
-                    cursor={{ fill: 'var(--accent)' }}
-                    contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--popover-foreground)' }}
-                  />
-                  <Bar dataKey="qty" fill="var(--primary)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-lg">{t('finance.expenses')}</CardTitle></CardHeader>
-          <CardContent className="p-0">
-            {report.expenseByCat.size === 0 ? (
-              <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('common.category')}</TableHead>
-                    <TableHead className="text-right">{t('common.amount')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.from(report.expenseByCat.entries()).map(([cat, amt]) => (
-                    <TableRow key={cat}>
-                      <TableCell>{t(`finance.categories.${cat}`, cat)}</TableCell>
-                      <TableCell className="text-right font-medium">{formatCurrency(amt)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle className="text-lg">{t('reports.bestSellers')}</CardTitle></CardHeader>
-        <CardContent className="p-0">
-          {report.bestSellers.length === 0 ? (
-            <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('common.name')}</TableHead>
-                    <TableHead className="text-right">{t('common.quantity')}</TableHead>
-                    <TableHead className="text-right">{t('finance.revenue')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {report.bestSellers.map((b) => (
-                    <TableRow key={b.name}>
-                      <TableCell className="font-medium">{b.name}</TableCell>
-                      <TableCell className="text-right">{b.qty}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(b.revenue)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    </ErrorBoundary>
   )
 }

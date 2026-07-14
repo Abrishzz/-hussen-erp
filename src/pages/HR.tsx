@@ -1,111 +1,98 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { jsPDF } from 'jspdf'
-import { UserPlus, CalendarCheck, Wallet, Pencil, Trash2, FileText } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { now } from '@/lib/timestamp'
+import { useEmployees, useAddEmployee, useUpdateEmployee, useDeleteEmployee } from '@/hooks/useData'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
+import { DataTable } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { EmployeeDialog } from '@/features/hr/EmployeeDialog'
-import { AttendanceDialog } from '@/features/hr/AttendanceDialog'
-import { useCollection, useDeleteDocument, useAddDocument, orderBy } from '@/hooks/useFirestore'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { toast } from '@/store/toastStore'
-import type { Employee, Attendance, Payroll } from '@/types'
-
-function tsToDate(ts: unknown): Date {
-  if (ts && typeof ts === 'object' && 'seconds' in ts) return new Date((ts as { seconds: number }).seconds * 1000)
-  return new Date()
-}
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Pencil, Trash2, UserPlus, ClipboardCheck, Wallet } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
+import type { Employee } from '@/types'
 
 export default function HR() {
+  return <ErrorBoundary><HRContent /></ErrorBoundary>
+}
+
+function HRContent() {
   const { t } = useTranslation()
-  const { data: employees, isLoading } = useCollection<Employee>('employees', [orderBy('name')])
-  const { data: attendance } = useCollection<Attendance>('attendance', [orderBy('date', 'desc')])
-  const { data: payroll } = useCollection<Payroll>('payroll', [orderBy('month', 'desc')])
-  const deleteEmployee = useDeleteDocument('employees')
-  const addPayroll = useAddDocument('payroll')
+  const { data: employees, isLoading } = useEmployees()
+  const add = useAddEmployee()
+  const update = useUpdateEmployee()
+  const remove = useDeleteEmployee()
 
-  const [empDialog, setEmpDialog] = useState(false)
-  const [editing, setEditing] = useState<Employee | null>(null)
-  const [toDelete, setToDelete] = useState<Employee | null>(null)
-  const [attDialog, setAttDialog] = useState(false)
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
-  const [generating, setGenerating] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editEmp, setEditEmp] = useState<Employee | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    name: '', role: '', phone: '',
+    salary: '', salaryType: 'monthly' as 'daily' | 'monthly',
+  })
+  const [saving, setSaving] = useState(false)
 
-  const empName = (id: string) => employees?.find((e) => e.id === id)?.name ?? id
-
-  const workedDays = (empId: string, ym: string) =>
-    (attendance ?? []).filter((a) => {
-      const d = tsToDate(a.date)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      return a.empId === empId && key === ym && (a.status === 'present' || a.status === 'late' || a.status === 'half-day')
-    }).reduce((s, a) => s + (a.status === 'half-day' ? 0.5 : 1), 0)
-
-  const generatePayroll = async () => {
-    const active = (employees ?? []).filter((e) => e.isActive)
-    if (active.length === 0) return
-    setGenerating(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
     try {
-      const existing = new Set((payroll ?? []).filter((p) => p.month === month).map((p) => p.empId))
-      let created = 0
-      for (const e of active) {
-        if (existing.has(e.id)) continue
-        const days = workedDays(e.id, month)
-        const netPay = e.salaryType === 'monthly' ? e.salary : Math.round(e.salary * days)
-        await addPayroll.mutateAsync({
-          empId: e.id,
-          month,
-          baseSalary: e.salary,
-          daysWorked: days,
-          deductions: 0,
-          netPay,
-          paidAt: null,
-        })
-        created++
+      const data = {
+        name: form.name,
+        role: form.role,
+        phone: form.phone,
+        salary: Math.round(parseFloat(form.salary) * 100),
+        salaryType: form.salaryType,
+        hireDate: now(),
+        isActive: true,
       }
-      toast({ title: created > 0 ? t('common.success') : t('reports.noData'), variant: created > 0 ? 'success' : 'default' })
-    } catch {
-      toast({ title: t('common.error'), variant: 'destructive' })
+      if (editEmp) {
+        await update.mutateAsync({ id: editEmp.id, data })
+      } else {
+        await add.mutateAsync(data)
+      }
+      setFormOpen(false)
     } finally {
-      setGenerating(false)
+      setSaving(false)
     }
   }
 
-  const payslipPdf = (p: Payroll) => {
-    const doc = new jsPDF()
-    doc.setFontSize(16)
-    doc.text('Hussen Bakery — Pay Slip', 14, 20)
-    doc.setFontSize(11)
-    const rows: [string, string][] = [
-      [t('hr.employees'), empName(p.empId)],
-      ['Month', p.month],
-      [t('hr.baseSalary'), formatCurrency(p.baseSalary)],
-      [t('hr.daysWorked'), String(p.daysWorked)],
-      [t('hr.deductions'), formatCurrency(p.deductions)],
-      [t('hr.netPay'), formatCurrency(p.netPay)],
-    ]
-    let y = 36
-    for (const [k, v] of rows) {
-      doc.text(k, 14, y)
-      doc.text(v, 120, y)
-      y += 9
-    }
-    doc.save(`payslip-${empName(p.empId)}-${p.month}.pdf`)
-  }
-
-  const monthPayroll = useMemo(() => (payroll ?? []).filter((p) => p.month === month), [payroll, month])
+  const columns = [
+    { key: 'name', header: t('common.name'), cell: (e: Employee) => e.name },
+    { key: 'role', header: 'Role', cell: (e: Employee) => e.role },
+    { key: 'phone', header: t('common.phone'), cell: (e: Employee) => e.phone },
+    { key: 'salary', header: t('hr.baseSalary'), cell: (e: Employee) => formatCurrency(e.salary) },
+    { key: 'type', header: 'Type', cell: (e: Employee) => (
+      <Badge variant="secondary">{t(`hr.salaryType.${e.salaryType}`)}</Badge>
+    )},
+    { key: 'status', header: t('common.status'), cell: (e: Employee) => (
+      <Badge variant={e.isActive ? 'success' : 'secondary'}>{e.isActive ? t('common.active') : t('common.inactive')}</Badge>
+    )},
+    { key: 'actions', header: t('common.actions'), cell: (e: Employee) => (
+      <div className="flex gap-1">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditEmp(e); setForm({ name: e.name, role: e.role, phone: e.phone, salary: (e.salary / 100).toString(), salaryType: e.salaryType }); setFormOpen(true) }}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(e.id)}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    )},
+  ]
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t('hr.title')}</h1>
-        <Button onClick={() => { setEditing(null); setEmpDialog(true) }}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          {t('hr.addEmployee')}
+        <Button onClick={() => { setEditEmp(null); setForm({ name: '', role: '', phone: '', salary: '', salaryType: 'monthly' }); setFormOpen(true) }}>
+          <UserPlus className="mr-2 h-4 w-4" /> {t('hr.addEmployee')}
         </Button>
       </div>
 
@@ -115,171 +102,128 @@ export default function HR() {
           <TabsTrigger value="attendance">{t('hr.attendance')}</TabsTrigger>
           <TabsTrigger value="payroll">{t('hr.payroll')}</TabsTrigger>
         </TabsList>
-
-        {/* Employees */}
         <TabsContent value="employees">
-          <Card>
-            <CardContent className="p-0">
-              {isLoading ? (
-                <p className="py-12 text-center text-muted-foreground">{t('common.loading')}</p>
-              ) : (employees ?? []).length === 0 ? (
-                <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('common.name')}</TableHead>
-                        <TableHead>{t('common.status')}</TableHead>
-                        <TableHead>{t('common.phone')}</TableHead>
-                        <TableHead className="text-right">{t('hr.baseSalary')}</TableHead>
-                        <TableHead className="text-right">{t('common.actions')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(employees ?? []).map((e) => (
-                        <TableRow key={e.id}>
-                          <TableCell className="font-medium">{e.name}</TableCell>
-                          <TableCell>{e.role}</TableCell>
-                          <TableCell>{e.phone}</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(e.salary)}
-                            <span className="ml-1 text-xs text-muted-foreground">/{t(`hr.salaryType.${e.salaryType}`)}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => { setEditing(e); setEmpDialog(true) }}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setToDelete(e)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <DataTable columns={columns} data={employees || []} loading={isLoading} />
         </TabsContent>
-
-        {/* Attendance */}
         <TabsContent value="attendance">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">{t('hr.attendance')}</CardTitle>
-              <Button size="sm" onClick={() => setAttDialog(true)} disabled={(employees ?? []).length === 0}>
-                <CalendarCheck className="mr-2 h-4 w-4" />
-                {t('hr.attendance')}
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              {(attendance ?? []).length === 0 ? (
-                <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('common.date')}</TableHead>
-                        <TableHead>{t('hr.employees')}</TableHead>
-                        <TableHead>{t('common.status')}</TableHead>
-                        <TableHead>{t('hr.checkIn')}</TableHead>
-                        <TableHead>{t('hr.checkOut')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(attendance ?? []).slice(0, 50).map((a) => (
-                        <TableRow key={a.id}>
-                          <TableCell className="text-sm text-muted-foreground">{formatDate(tsToDate(a.date))}</TableCell>
-                          <TableCell className="font-medium">{empName(a.empId)}</TableCell>
-                          <TableCell>
-                            <Badge variant={a.status === 'present' ? 'success' : a.status === 'absent' ? 'destructive' : 'warning'}>
-                              {a.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{a.checkIn || '—'}</TableCell>
-                          <TableCell>{a.checkOut || '—'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <AttendanceView employees={employees} />
         </TabsContent>
-
-        {/* Payroll */}
         <TabsContent value="payroll">
-          <Card>
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-lg">{t('hr.payroll')}</CardTitle>
-              <div className="flex items-center gap-2">
-                <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="h-9 w-40" />
-                <Button size="sm" onClick={generatePayroll} disabled={generating || (employees ?? []).length === 0}>
-                  <Wallet className="mr-2 h-4 w-4" />
-                  {generating ? t('common.saving') : t('hr.generatePayroll')}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {monthPayroll.length === 0 ? (
-                <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('hr.employees')}</TableHead>
-                        <TableHead className="text-right">{t('hr.baseSalary')}</TableHead>
-                        <TableHead className="text-right">{t('hr.daysWorked')}</TableHead>
-                        <TableHead className="text-right">{t('hr.netPay')}</TableHead>
-                        <TableHead className="text-right">{t('hr.paySlip')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {monthPayroll.map((p) => (
-                        <TableRow key={p.id}>
-                          <TableCell className="font-medium">{empName(p.empId)}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(p.baseSalary)}</TableCell>
-                          <TableCell className="text-right">{p.daysWorked}</TableCell>
-                          <TableCell className="text-right font-semibold">{formatCurrency(p.netPay)}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="icon" onClick={() => payslipPdf(p)}>
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <PayrollView employees={employees} />
         </TabsContent>
       </Tabs>
 
-      <EmployeeDialog open={empDialog} onOpenChange={setEmpDialog} employee={editing} />
-      <AttendanceDialog open={attDialog} onOpenChange={setAttDialog} employees={employees ?? []} />
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editEmp ? t('common.edit') : t('common.create')} {t('hr.employees')}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('common.name')}</Label>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Input value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} required />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('common.phone')}</Label>
+                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('hr.baseSalary')} (ETB)</Label>
+                <Input type="number" step="0.01" value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} required />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common.type')}</Label>
+              <Select value={form.salaryType} onValueChange={(v) => setForm({ ...form, salaryType: v as 'daily' | 'monthly' })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">{t('hr.salaryType.daily')}</SelectItem>
+                  <SelectItem value="monthly">{t('hr.salaryType.monthly')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>{t('common.cancel')}</Button>
+              <Button type="submit" disabled={saving}>{saving ? t('common.loading') : t('common.save')}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <ConfirmDialog
-        open={!!toDelete}
-        onOpenChange={(o) => !o && setToDelete(null)}
-        title={t('hr.editEmployee')}
-        description={toDelete?.name ?? ''}
-        confirmLabel={t('common.delete')}
-        loading={deleteEmployee.isPending}
-        onConfirm={async () => {
-          if (!toDelete) return
-          try { await deleteEmployee.mutateAsync(toDelete.id); toast({ title: t('common.success'), variant: 'success' }) }
-          catch { toast({ title: t('common.error'), variant: 'destructive' }) }
-          finally { setToDelete(null) }
-        }}
+        open={!!deleteId}
+        onOpenChange={() => setDeleteId(null)}
+        title={t('common.delete')}
+        description="Are you sure you want to deactivate this employee?"
+        variant="destructive"
+        onConfirm={() => deleteId && remove.mutate(deleteId)}
       />
+    </div>
+  )
+}
+
+// Attendance sub-component
+function AttendanceView({ employees }: { employees?: Employee[] }) {
+  const { t } = useTranslation()
+  const [selectedEmp, setSelectedEmp] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [checkIn, setCheckIn] = useState('')
+  const [checkOut, setCheckOut] = useState('')
+  const [status, setStatus] = useState<'present' | 'absent' | 'late' | 'half-day'>('present')
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        <Select value={selectedEmp} onValueChange={setSelectedEmp}>
+          <SelectTrigger><SelectValue placeholder={t('common.name')} /></SelectTrigger>
+          <SelectContent>
+            {employees?.map((e) => (
+              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <Input type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} placeholder={t('hr.checkIn')} />
+        <Input type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} placeholder={t('hr.checkOut')} />
+        <Select value={status} onValueChange={(v) => setStatus(v as 'present' | 'absent' | 'late' | 'half-day')}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="present">Present</SelectItem>
+            <SelectItem value="absent">Absent</SelectItem>
+            <SelectItem value="late">Late</SelectItem>
+            <SelectItem value="half-day">Half Day</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button><ClipboardCheck className="mr-2 h-4 w-4" /> {t('common.save')}</Button>
+      </div>
+      {!selectedEmp && (
+        <p className="text-sm text-muted-foreground">Select an employee and fill in details to record attendance.</p>
+      )}
+    </div>
+  )
+}
+
+// Payroll sub-component
+function PayrollView({ employees }: { employees?: Employee[] }) {
+  const { t } = useTranslation()
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-4">
+        <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="max-w-[200px]" />
+        <Button><Wallet className="mr-2 h-4 w-4" /> {t('hr.generatePayroll')}</Button>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Payroll for {month} — {employees?.length || 0} employees
+      </p>
     </div>
   )
 }

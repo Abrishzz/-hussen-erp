@@ -16,7 +16,7 @@ export interface Product {
   id: string
   name_en: string
   name_am: string
-  price: number // stored in cents
+  price: number
   category: string
   imageUrl: string
   isActive: boolean
@@ -26,7 +26,7 @@ export interface Product {
 export interface CartItem {
   product: Product
   quantity: number
-  discount: number // per-item discount in cents
+  discount: number
 }
 
 export interface Sale {
@@ -61,7 +61,7 @@ export interface RawMaterial {
   unit: 'kg' | 'liter' | 'pcs' | 'sack'
   currentQty: number
   reorderLevel: number
-  avgCost: number // in cents per unit
+  avgCost: number
   isActive: boolean
 }
 
@@ -92,7 +92,7 @@ export interface Recipe {
   productName_en: string
   productName_am: string
   ingredients: RecipeIngredient[]
-  batchYield: number // units produced per batch
+  batchYield: number
   instructions?: string
 }
 
@@ -114,11 +114,12 @@ export interface ProductionBatch {
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled'
   staffId: string
   date: Timestamp
-  cost: number // in cents
+  cost: number
   notes?: string
 }
 
 export interface FinishedGood {
+  id: string
   productId: string
   productName_en: string
   productName_am: string
@@ -131,7 +132,7 @@ export interface Employee {
   name: string
   role: string
   phone: string
-  salary: number // in cents
+  salary: number
   salaryType: 'daily' | 'monthly'
   hireDate: Timestamp
   isActive: boolean
@@ -149,7 +150,7 @@ export interface Attendance {
 export interface Expense {
   id: string
   category: string
-  amount: number // in cents
+  amount: number
   description: string
   date: Timestamp
   recordedBy: string
@@ -158,7 +159,7 @@ export interface Expense {
 export interface Payroll {
   id: string
   empId: string
-  month: string // YYYY-MM
+  month: string
   baseSalary: number
   daysWorked: number
   deductions: number

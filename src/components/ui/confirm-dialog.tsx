@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -13,11 +12,11 @@ interface ConfirmDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
-  description?: string
+  description: string
   confirmLabel?: string
-  destructive?: boolean
+  cancelLabel?: string
+  variant?: 'default' | 'destructive'
   onConfirm: () => void
-  loading?: boolean
 }
 
 export function ConfirmDialog({
@@ -25,30 +24,30 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel,
-  destructive = true,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  variant = 'default',
   onConfirm,
-  loading = false,
 }: ConfirmDialogProps) {
-  const { t } = useTranslation()
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {t('common.cancel')}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {cancelLabel}
           </Button>
           <Button
-            variant={destructive ? 'destructive' : 'default'}
-            onClick={onConfirm}
-            disabled={loading}
+            variant={variant === 'destructive' ? 'destructive' : 'default'}
+            onClick={() => {
+              onConfirm()
+              onOpenChange(false)
+            }}
           >
-            {confirmLabel ?? t('common.confirm')}
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

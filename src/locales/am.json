@@ -69,7 +69,13 @@
     "from": "ከ",
     "to": "እስከ",
     "apply": "ተግብር",
-    "reset": "ዳግም አስጀምር"
+    "reset": "ዳግም አስጀምር",
+    "select": "ምረጥ...",
+    "count": "ብዛት",
+    "average": "አማካይ",
+    "trend": "አዝማሚያ",
+    "breakdown": "ክፍፍል",
+    "preferences": "ምርጫዎች"
   },
   "auth": {
     "login": "ግባ",

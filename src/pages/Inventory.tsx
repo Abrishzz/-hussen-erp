@@ -1,286 +1,121 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Package, Truck, MoreVertical, ArrowDownToLine, ArrowUpFromLine, Trash, Pencil, Trash2 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { useRawMaterials, useStockMovements } from '@/hooks/useData'
+import { RawMaterialForm } from '@/features/inventory/RawMaterialForm'
+import { StockMovementForm } from '@/features/inventory/StockMovementForm'
+import { SupplierManager } from '@/features/inventory/SupplierManager'
+import { ErrorBoundary } from '@/components/ui/error-boundary'
+import { DataTable } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { MaterialDialog } from '@/features/inventory/MaterialDialog'
-import { StockMovementDialog } from '@/features/inventory/StockMovementDialog'
-import { SupplierDialog } from '@/features/inventory/SupplierDialog'
-import { useCollection, useDeleteDocument, orderBy } from '@/hooks/useFirestore'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Plus, Pencil, Trash2, ArrowDownUp, AlertTriangle, Package,
+} from 'lucide-react'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
-import { toast } from '@/store/toastStore'
-import type { RawMaterial, StockMovement, Supplier } from '@/types'
-
-type MovementType = StockMovement['type']
+import { useDeleteMaterial } from '@/hooks/useData'
+import type { RawMaterial, StockMovement } from '@/types'
 
 export default function Inventory() {
-  const { t, i18n } = useTranslation()
-  const isAm = i18n.language === 'am'
+  const { t } = useTranslation()
+  const { data: materials, isLoading: matLoading } = useRawMaterials()
+  const { data: movements, isLoading: movLoading } = useStockMovements()
+  const deleteMaterial = useDeleteMaterial()
 
-  const { data: materials, isLoading } = useCollection<RawMaterial>('rawMaterials', [orderBy('name_en')])
-  const { data: movements } = useCollection<StockMovement>('stockMovements', [orderBy('timestamp', 'desc')])
-  const { data: suppliers } = useCollection<Supplier>('suppliers')
-  const deleteMaterial = useDeleteDocument('rawMaterials')
-  const deleteSupplier = useDeleteDocument('suppliers')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editMaterial, setEditMaterial] = useState<RawMaterial | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [movementOpen, setMovementOpen] = useState(false)
+  const [movementType, setMovementType] = useState<'IN' | 'OUT' | 'WASTE'>('IN')
 
-  const [matDialog, setMatDialog] = useState(false)
-  const [editingMat, setEditingMat] = useState<RawMaterial | null>(null)
-  const [moveDialog, setMoveDialog] = useState(false)
-  const [moveType, setMoveType] = useState<MovementType>('IN')
-  const [moveMat, setMoveMat] = useState<RawMaterial | null>(null)
-  const [supDialog, setSupDialog] = useState(false)
-  const [editingSup, setEditingSup] = useState<Supplier | null>(null)
-  const [delMat, setDelMat] = useState<RawMaterial | null>(null)
-  const [delSup, setDelSup] = useState<Supplier | null>(null)
+  const matColumns = [
+    { key: 'name', header: t('common.name'), cell: (m: RawMaterial) => (
+      <div><p className="font-medium">{m.name_en}</p><p className="text-xs text-muted-foreground font-ethiopic">{m.name_am}</p></div>
+    )},
+    { key: 'stock', header: t('inventory.currentStock'), cell: (m: RawMaterial) => (
+      <span className={m.currentQty <= m.reorderLevel ? 'text-destructive font-bold' : ''}>
+        {m.currentQty} {m.unit}
+      </span>
+    )},
+    { key: 'reorder', header: t('inventory.reorderLevel'), cell: (m: RawMaterial) => `${m.reorderLevel} ${m.unit}` },
+    { key: 'value', header: t('inventory.stockValue'), cell: (m: RawMaterial) => formatCurrency(m.currentQty * m.avgCost) },
+    { key: 'status', header: t('common.status'), cell: (m: RawMaterial) => m.currentQty <= m.reorderLevel
+      ? <Badge variant="destructive"><AlertTriangle className="mr-1 h-3 w-3" />{t('inventory.lowStockAlert')}</Badge>
+      : <Badge variant="success">{t('common.active')}</Badge>
+    },
+    { key: 'actions', header: t('common.actions'), cell: (m: RawMaterial) => (
+      <div className="flex gap-1">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditMaterial(m); setFormOpen(true) }}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(m.id)}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    )},
+  ]
 
-  const totalValue = useMemo(
-    () => (materials ?? []).reduce((s, m) => s + m.currentQty * m.avgCost, 0),
-    [materials]
-  )
-  const lowCount = useMemo(
-    () => (materials ?? []).filter((m) => m.currentQty <= m.reorderLevel).length,
-    [materials]
-  )
-
-  const openMove = (m: RawMaterial, type: MovementType) => {
-    setMoveMat(m)
-    setMoveType(type)
-    setMoveDialog(true)
-  }
-
-  const typeBadge = (type: MovementType) =>
-    type === 'IN' ? 'success' : type === 'OUT' ? 'secondary' : 'destructive'
+  const movColumns = [
+    { key: 'date', header: t('common.date'), cell: (m: StockMovement) => formatDateTime(m.timestamp) },
+    { key: 'type', header: t('inventory.type'), cell: (m: StockMovement) => (
+      <Badge variant={m.type === 'IN' ? 'success' : m.type === 'WASTE' ? 'destructive' : 'warning'}>
+        {t(`inventory.type.${m.type}`)}
+      </Badge>
+    )},
+    { key: 'qty', header: t('common.quantity'), cell: (m: StockMovement) => `${m.qty > 0 ? '+' : ''}${m.qty}` },
+    { key: 'note', header: t('common.notes'), cell: (m: StockMovement) => m.note || '-' },
+  ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+    <ErrorBoundary>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-2xl font-bold">{t('inventory.title')}</h1>
-          <p className="text-muted-foreground">
-            {t('inventory.stockValue')}: <span className="font-medium text-foreground">{formatCurrency(totalValue)}</span>
-            {lowCount > 0 && <span className="ml-2 text-destructive">· {lowCount} {t('inventory.lowStockAlert')}</span>}
-          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setMovementType('OUT'); setMovementOpen(true) }}>
+              <ArrowDownUp className="mr-1 h-4 w-4" /> {t('inventory.issueStock')}
+            </Button>
+            <Button variant="outline" onClick={() => { setMovementType('WASTE'); setMovementOpen(true) }}>
+              <AlertTriangle className="mr-1 h-4 w-4" /> {t('inventory.recordWastage')}
+            </Button>
+            <Button variant="outline" onClick={() => { setMovementType('IN'); setMovementOpen(true) }}>
+              <Package className="mr-1 h-4 w-4" /> {t('inventory.receiveStock')}
+            </Button>
+            <Button onClick={() => { setEditMaterial(null); setFormOpen(true) }}>
+              <Plus className="mr-2 h-4 w-4" /> {t('inventory.addMaterial')}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => { setEditingMat(null); setMatDialog(true) }}>
-            <Package className="mr-2 h-4 w-4" />
-            {t('inventory.addMaterial')}
-          </Button>
-          <Button variant="outline" onClick={() => { setEditingSup(null); setSupDialog(true) }}>
-            <Truck className="mr-2 h-4 w-4" />
-            {t('inventory.addSupplier')}
-          </Button>
-        </div>
+
+        <Tabs defaultValue="materials">
+          <TabsList>
+            <TabsTrigger value="materials">{t('inventory.title')}</TabsTrigger>
+            <TabsTrigger value="movements">{t('inventory.movementHistory')}</TabsTrigger>
+            <TabsTrigger value="suppliers">{t('inventory.suppliers')}</TabsTrigger>
+          </TabsList>
+          <TabsContent value="materials">
+            <DataTable columns={matColumns} data={materials || []} loading={matLoading} />
+          </TabsContent>
+          <TabsContent value="movements">
+            <DataTable columns={movColumns} data={movements || []} loading={movLoading} pageSize={20} />
+          </TabsContent>
+          <TabsContent value="suppliers">
+            <SupplierManager />
+          </TabsContent>
+        </Tabs>
+
+        <RawMaterialForm open={formOpen} onOpenChange={setFormOpen} material={editMaterial} />
+        <StockMovementForm open={movementOpen} onOpenChange={setMovementOpen} defaultType={movementType} />
+        <ConfirmDialog
+          open={!!deleteId}
+          onOpenChange={() => setDeleteId(null)}
+          title={t('common.delete')}
+          description="Are you sure you want to deactivate this material?"
+          variant="destructive"
+          onConfirm={() => deleteId && deleteMaterial.mutate(deleteId)}
+        />
       </div>
-
-      <Tabs defaultValue="materials">
-        <TabsList>
-          <TabsTrigger value="materials">{t('inventory.currentStock')}</TabsTrigger>
-          <TabsTrigger value="movements">{t('inventory.movementHistory')}</TabsTrigger>
-          <TabsTrigger value="suppliers">{t('inventory.suppliers')}</TabsTrigger>
-        </TabsList>
-
-        {/* Materials */}
-        <TabsContent value="materials">
-          <Card>
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="space-y-2 p-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-              ) : (materials ?? []).length === 0 ? (
-                <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('common.name')}</TableHead>
-                        <TableHead className="text-right">{t('inventory.currentStock')}</TableHead>
-                        <TableHead className="text-right">{t('inventory.avgCost')}</TableHead>
-                        <TableHead className="text-right">{t('inventory.stockValue')}</TableHead>
-                        <TableHead>{t('common.status')}</TableHead>
-                        <TableHead className="text-right">{t('common.actions')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(materials ?? []).map((m) => {
-                        const low = m.currentQty <= m.reorderLevel
-                        return (
-                          <TableRow key={m.id}>
-                            <TableCell className="font-medium">{isAm ? m.name_am : m.name_en}</TableCell>
-                            <TableCell className="text-right">
-                              {m.currentQty} {t(`inventory.unit.${m.unit}`)}
-                            </TableCell>
-                            <TableCell className="text-right">{formatCurrency(m.avgCost)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(m.currentQty * m.avgCost)}</TableCell>
-                            <TableCell>
-                              <Badge variant={low ? 'destructive' : 'success'}>
-                                {low ? t('inventory.lowStockAlert') : t('common.active')}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => openMove(m, 'IN')}>
-                                    <ArrowDownToLine className="mr-2 h-4 w-4" />{t('inventory.receiveStock')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => openMove(m, 'OUT')}>
-                                    <ArrowUpFromLine className="mr-2 h-4 w-4" />{t('inventory.issueStock')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => openMove(m, 'WASTE')}>
-                                    <Trash className="mr-2 h-4 w-4" />{t('inventory.recordWastage')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => { setEditingMat(m); setMatDialog(true) }}>
-                                    <Pencil className="mr-2 h-4 w-4" />{t('common.edit')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-destructive" onClick={() => setDelMat(m)}>
-                                    <Trash2 className="mr-2 h-4 w-4" />{t('common.delete')}
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Movements */}
-        <TabsContent value="movements">
-          <Card>
-            <CardContent className="p-0">
-              {(movements ?? []).length === 0 ? (
-                <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('common.date')}</TableHead>
-                        <TableHead>{t('common.name')}</TableHead>
-                        <TableHead>{t('inventory.type.IN')}</TableHead>
-                        <TableHead className="text-right">{t('common.quantity')}</TableHead>
-                        <TableHead>{t('common.notes')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(movements ?? []).map((mv) => (
-                        <TableRow key={mv.id}>
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                            {mv.timestamp ? formatDateTime(mv.timestamp as unknown as { seconds: number; nanoseconds: number }) : '—'}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {isAm ? (mv as { materialName_am?: string }).materialName_am ?? mv.materialId : (mv as { materialName_en?: string }).materialName_en ?? mv.materialId}
-                          </TableCell>
-                          <TableCell><Badge variant={typeBadge(mv.type)}>{t(`inventory.type.${mv.type}`)}</Badge></TableCell>
-                          <TableCell className="text-right">{mv.qty}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{mv.note || '—'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Suppliers */}
-        <TabsContent value="suppliers">
-          <Card>
-            <CardContent className="p-0">
-              {(suppliers ?? []).length === 0 ? (
-                <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('common.name')}</TableHead>
-                        <TableHead>{t('common.phone')}</TableHead>
-                        <TableHead>{t('common.address')}</TableHead>
-                        <TableHead className="text-right">{t('common.actions')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(suppliers ?? []).map((s) => (
-                        <TableRow key={s.id}>
-                          <TableCell className="font-medium">{s.name}</TableCell>
-                          <TableCell>{s.phone}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{s.address}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => { setEditingSup(s); setSupDialog(true) }}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDelSup(s)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      <MaterialDialog open={matDialog} onOpenChange={setMatDialog} material={editingMat} />
-      <StockMovementDialog open={moveDialog} onOpenChange={setMoveDialog} material={moveMat} type={moveType} />
-      <SupplierDialog open={supDialog} onOpenChange={setSupDialog} supplier={editingSup} />
-
-      <ConfirmDialog
-        open={!!delMat}
-        onOpenChange={(o) => !o && setDelMat(null)}
-        title={t('inventory.editMaterial')}
-        description={delMat ? (isAm ? delMat.name_am : delMat.name_en) : ''}
-        confirmLabel={t('common.delete')}
-        loading={deleteMaterial.isPending}
-        onConfirm={async () => {
-          if (!delMat) return
-          try { await deleteMaterial.mutateAsync(delMat.id); toast({ title: t('common.success'), variant: 'success' }) }
-          catch { toast({ title: t('common.error'), variant: 'destructive' }) }
-          finally { setDelMat(null) }
-        }}
-      />
-      <ConfirmDialog
-        open={!!delSup}
-        onOpenChange={(o) => !o && setDelSup(null)}
-        title={t('inventory.editSupplier')}
-        description={delSup?.name ?? ''}
-        confirmLabel={t('common.delete')}
-        loading={deleteSupplier.isPending}
-        onConfirm={async () => {
-          if (!delSup) return
-          try { await deleteSupplier.mutateAsync(delSup.id); toast({ title: t('common.success'), variant: 'success' }) }
-          catch { toast({ title: t('common.error'), variant: 'destructive' }) }
-          finally { setDelSup(null) }
-        }}
-      />
-    </div>
+    </ErrorBoundary>
   )
 }

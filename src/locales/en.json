@@ -69,7 +69,13 @@
     "from": "From",
     "to": "To",
     "apply": "Apply",
-    "reset": "Reset"
+    "reset": "Reset",
+    "select": "Select...",
+    "count": "Count",
+    "average": "Average",
+    "trend": "Trend",
+    "breakdown": "Breakdown",
+    "preferences": "Preferences"
   },
   "auth": {
     "login": "Login",
