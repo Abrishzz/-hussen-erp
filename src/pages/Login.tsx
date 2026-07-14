@@ -6,8 +6,9 @@ import { auth } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Store, Languages, ShieldCheck, ShoppingCart, ChefHat, ChevronRight, TrendingUp } from 'lucide-react'
+import { Store, Languages, ShieldCheck, ShoppingCart, ChefHat, ChevronRight } from 'lucide-react'
 import { roleHome } from '@/components/auth/ProtectedRoute'
+import { BakeryArt } from '@/components/BakeryArt'
 import type { UserRole } from '@/types'
 
 interface DemoUser {
@@ -63,8 +64,8 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Brand / chart panel */}
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-800 p-12 text-white lg:flex">
+      {/* Brand / illustration panel */}
+      <div className="relative hidden w-1/2 flex-col overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-800 p-12 text-white lg:flex">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-fuchsia-400/20 blur-3xl" />
 
@@ -75,54 +76,28 @@ export default function Login() {
           <span className="text-xl font-bold tracking-tight">{t('app.name')}</span>
         </div>
 
-        <div className="relative space-y-8">
-          <div className="space-y-3">
+        <div className="relative flex flex-1 flex-col items-center justify-center">
+          <BakeryArt className="w-[24rem] max-w-full drop-shadow-2xl" />
+          <div className="mt-4 space-y-3 text-center">
             <h1 className="text-4xl font-bold leading-tight">
-              Run your bakery,<br />beautifully.
+              Freshly baked<br />management.
             </h1>
-            <p className="max-w-sm text-white/70">
-              Sales, inventory, production, HR and finance — one modern dashboard, full of insights.
+            <p className="mx-auto max-w-sm text-white/70">
+              Sales, inventory, production, HR &amp; finance — one modern, chart-rich dashboard.
             </p>
-          </div>
-
-          {/* Decorative analytics card */}
-          <div className="max-w-sm rounded-3xl bg-white/10 p-6 backdrop-blur-md ring-1 ring-white/15">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-white/60">Monthly Revenue</p>
-                <p className="text-2xl font-bold">ETB 128.4k</p>
-              </div>
-              <span className="flex items-center gap-1 rounded-full bg-emerald-400/20 px-2.5 py-1 text-xs font-medium text-emerald-200">
-                <TrendingUp className="h-3.5 w-3.5" /> +12.8%
-              </span>
-            </div>
-            <svg viewBox="0 0 320 90" className="h-24 w-full" preserveAspectRatio="none">
-              {[28, 46, 34, 60, 40, 72, 54, 82, 66, 90].map((h, i) => (
-                <rect
-                  key={i}
-                  x={i * 32 + 6}
-                  y={90 - h}
-                  width="18"
-                  height={h}
-                  rx="6"
-                  className="fill-white/80"
-                  opacity={0.35 + (h / 90) * 0.65}
-                />
-              ))}
-            </svg>
           </div>
         </div>
 
-        <div className="relative flex gap-8 text-sm">
-          <div>
+        <div className="relative flex justify-center gap-10 text-sm">
+          <div className="text-center">
             <p className="text-2xl font-bold">99.9%</p>
             <p className="text-white/60">Uptime</p>
           </div>
-          <div>
+          <div className="text-center">
             <p className="text-2xl font-bold">2×</p>
             <p className="text-white/60">Faster checkout</p>
           </div>
-          <div>
+          <div className="text-center">
             <p className="text-2xl font-bold">EN · አማ</p>
             <p className="text-white/60">Bilingual</p>
           </div>
