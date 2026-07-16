@@ -27,8 +27,18 @@ const PASSWORD = 'password123'
 
 const users = [
   { uid: 'owner-uid', email: 'owner@hussenbakery.com', displayName: 'Hussen (Owner)', role: 'owner' },
+  { uid: 'manager-uid', email: 'manager@hussenbakery.com', displayName: 'Bereket (Manager)', role: 'manager' },
   { uid: 'cashier-uid', email: 'cashier@hussenbakery.com', displayName: 'Cashier One', role: 'cashier' },
+  { uid: 'cashier2-uid', email: 'cashier2@hussenbakery.com', displayName: 'Cashier Two', role: 'cashier' },
   { uid: 'staff-uid', email: 'staff@hussenbakery.com', displayName: 'Baker Staff', role: 'staff' },
+]
+
+const branches = [
+  { name: 'Bulehora Main', name_am: 'ቡለ ሆራ ዋና', location: 'Bulehora Town Center', phone: '+251913000001' },
+  { name: 'Yabelo Road', name_am: 'ያቤሎ መንገድ', location: 'Yabelo Road', phone: '+251913000002' },
+  { name: 'Market Square', name_am: 'ገበያ አደባባይ', location: 'Central Market', phone: '+251913000003' },
+  { name: 'University Gate', name_am: 'ዩኒቨርሲቲ በር', location: 'Near BHU', phone: '+251913000004' },
+  { name: 'Bus Station', name_am: 'አውቶቡስ ጣቢያ', location: 'Main Bus Station', phone: '+251913000005' },
 ]
 
 // Prices stored in cents (santim). ETB 25.00 => 2500.
@@ -62,6 +72,13 @@ const rawMaterials = [
 const suppliers = [
   { name: 'Bulehora Flour Mills', phone: '+251912000001', address: 'Bulehora, Oromia', productsSupplied: ['Wheat Flour', 'Sugar'], isActive: true },
   { name: 'Oromia Dairy Supply', phone: '+251912000002', address: 'Yabelo Road, Bulehora', productsSupplied: ['Butter', 'Eggs'], isActive: true },
+]
+
+// Salaries stored in cents. ETB 8000/month => 800000; ETB 150/day => 15000.
+const employees = [
+  { name: 'Aster Bekele', role: 'Head Baker', phone: '+251911111111', salary: 800000, salaryType: 'monthly', isActive: true },
+  { name: 'Dawit Tesfaye', role: 'Baker Assistant', phone: '+251922222222', salary: 15000, salaryType: 'daily', isActive: true },
+  { name: 'Meron Alemu', role: 'Cashier', phone: '+251933333333', salary: 600000, salaryType: 'monthly', isActive: true },
 ]
 
 async function seedUsers() {
@@ -106,6 +123,18 @@ async function main() {
   await seedCollection('products', products, (p) => ({ ...p, isActive: true, createdAt: Timestamp.now() }))
   await seedCollection('rawMaterials', rawMaterials, (m) => ({ ...m, isActive: true }))
   await seedCollection('suppliers', suppliers)
+  await seedCollection('employees', employees, (e) => ({ ...e, hireDate: Timestamp.now() }))
+
+  // Branches, and assign the two cashiers to the first two branches.
+  const branchIds = []
+  for (const b of branches) {
+    const ref = await db.collection('branches').add({ ...b, isActive: true, createdAt: Timestamp.now() })
+    branchIds.push(ref.id)
+  }
+  console.log(`  branches: ${branches.length}`)
+  await db.collection('users').doc('cashier-uid').set({ branchId: branchIds[0] }, { merge: true })
+  await db.collection('users').doc('cashier2-uid').set({ branchId: branchIds[1] }, { merge: true })
+  console.log('  assigned cashiers to branches')
 
   await db.collection('settings').doc('app').set({
     shopName: 'Hussen Bakery',
@@ -119,10 +148,27 @@ async function main() {
   })
   console.log('  settings/app')
 
-  // A few sample sales spread across today so the dashboard has data.
+  // Sample sales spread across the last ~10 days and across cashiers, so the
+  // dashboard, reports, and staff-sales report all have meaningful data.
   const productSnap = await db.collection('products').get()
   const prodList = productSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-  const sampleCount = 6
+
+  // Starter stock: a few products sit in the central warehouse, and Branch 1 has
+  // already received some so the branch cashier can sell immediately.
+  const stockProducts = prodList.slice(0, 5)
+  for (const p of stockProducts) {
+    await db.collection('warehouseStock').doc(p.id).set({
+      productId: p.id, name_en: p.name_en, name_am: p.name_am, qty: 100,
+    })
+    await db.collection('branchStock').doc(`${branchIds[0]}_${p.id}`).set({
+      branchId: branchIds[0], productId: p.id, name_en: p.name_en, name_am: p.name_am, qty: 40,
+    })
+  }
+  console.log(`  warehouse + branch1 stock: ${stockProducts.length} products`)
+
+  const cashiers = ['cashier-uid', 'cashier2-uid', 'owner-uid']
+  const cashierBranch = { 'cashier-uid': branchIds[0], 'cashier2-uid': branchIds[1], 'owner-uid': '' }
+  const sampleCount = 30
   for (let i = 0; i < sampleCount; i++) {
     const picks = [prodList[i % prodList.length], prodList[(i + 3) % prodList.length]]
     const items = picks.map((p) => ({
@@ -135,14 +181,17 @@ async function main() {
       total: p.price * ((i % 3) + 1),
     }))
     const subtotal = items.reduce((s, it) => s + it.total, 0)
-    const hoursAgo = i * 1.5
+    // Spread across ~10 days (a few orders per day, some today).
+    const daysAgo = Math.floor(i / 3)
+    const hoursAgo = daysAgo * 24 + (i % 3) * 2
     await db.collection('sales').add({
       items,
       subtotal,
       discount: 0,
       total: subtotal,
       paymentMethod: ['cash', 'telebirr', 'bank'][i % 3],
-      cashierId: 'cashier-uid',
+      cashierId: cashiers[i % cashiers.length],
+      branchId: cashierBranch[cashiers[i % cashiers.length]] || '',
       customerName: '',
       status: 'completed',
       timestamp: Timestamp.fromMillis(Date.now() - hoursAgo * 3600 * 1000),
@@ -150,7 +199,7 @@ async function main() {
   }
   console.log(`  sales: ${sampleCount} sample orders`)
 
-  console.log('\n✅ Seed complete. Log in with owner@hussenbakery.com / password123')
+  console.log('\n✅ Seed complete. Logins (password123): owner@ / manager@ / cashier@ (Branch 1) / cashier2@ (Branch 2) / staff@ hussenbakery.com')
   // FieldValue is imported to keep parity with app writes; reference to avoid lint noise.
   void FieldValue
 }

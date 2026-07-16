@@ -35,45 +35,50 @@ export const posStore = {
   },
   addItem(product: Product) {
     const existing = state.items.find((i) => i.product.id === product.id)
-    if (existing) {
-      existing.quantity++
-    } else {
-      state.items.push({ product, quantity: 1, discount: 0 })
-    }
+    const items = existing
+      ? state.items.map((i) =>
+          i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+        )
+      : [...state.items, { product, quantity: 1, discount: 0 }]
+    state = { ...state, items }
     notify()
   },
   removeItem(productId: string) {
-    state.items = state.items.filter((i) => i.product.id !== productId)
+    state = { ...state, items: state.items.filter((i) => i.product.id !== productId) }
     notify()
   },
   updateQuantity(productId: string, qty: number) {
-    const item = state.items.find((i) => i.product.id === productId)
-    if (item) {
-      item.quantity = Math.max(1, qty)
-      notify()
+    state = {
+      ...state,
+      items: state.items.map((i) =>
+        i.product.id === productId ? { ...i, quantity: Math.max(1, qty) } : i
+      ),
     }
+    notify()
   },
   updateItemDiscount(productId: string, discount: number) {
-    const item = state.items.find((i) => i.product.id === productId)
-    if (item) {
-      item.discount = Math.max(0, discount)
-      notify()
+    state = {
+      ...state,
+      items: state.items.map((i) =>
+        i.product.id === productId ? { ...i, discount: Math.max(0, discount) } : i
+      ),
     }
+    notify()
   },
   setDiscount(discount: number) {
-    state.discount = Math.max(0, discount)
+    state = { ...state, discount: Math.max(0, discount) }
     notify()
   },
   setCustomerName(name: string) {
-    state.customerName = name
+    state = { ...state, customerName: name }
     notify()
   },
   setPaymentMethod(method: 'cash' | 'telebirr' | 'bank') {
-    state.paymentMethod = method
+    state = { ...state, paymentMethod: method }
     notify()
   },
   setCashReceived(amount: number) {
-    state.cashReceived = amount
+    state = { ...state, cashReceived: amount }
     notify()
   },
   getSubtotal() {
@@ -90,31 +95,48 @@ export const posStore = {
   },
   holdOrder() {
     const id = generateId()
-    state.heldOrders.push({
-      id,
-      items: [...state.items],
-      discount: state.discount,
-      customerName: state.customerName,
-    })
-    this.clearCart()
+    const heldOrders = [
+      ...state.heldOrders,
+      {
+        id,
+        items: [...state.items],
+        discount: state.discount,
+        customerName: state.customerName,
+      },
+    ]
+    state = {
+      ...state,
+      heldOrders,
+      items: [],
+      discount: 0,
+      customerName: '',
+      cashReceived: 0,
+      paymentMethod: 'cash',
+    }
     notify()
   },
   resumeOrder(id: string) {
     const held = state.heldOrders.find((o) => o.id === id)
     if (held) {
-      state.items = held.items
-      state.discount = held.discount
-      state.customerName = held.customerName
-      state.heldOrders = state.heldOrders.filter((o) => o.id !== id)
+      state = {
+        ...state,
+        items: held.items,
+        discount: held.discount,
+        customerName: held.customerName,
+        heldOrders: state.heldOrders.filter((o) => o.id !== id),
+      }
       notify()
     }
   },
   clearCart() {
-    state.items = []
-    state.discount = 0
-    state.customerName = ''
-    state.cashReceived = 0
-    state.paymentMethod = 'cash'
+    state = {
+      ...state,
+      items: [],
+      discount: 0,
+      customerName: '',
+      cashReceived: 0,
+      paymentMethod: 'cash',
+    }
     notify()
   },
 }

@@ -7,9 +7,11 @@ import type { Product } from '@/types'
 
 interface ProductGridProps {
   onSelect: (product: Product) => void
+  /** When provided, POS is branch-scoped: qty per productId, out-of-stock is disabled. */
+  stock?: Record<string, number> | null
 }
 
-export function ProductGrid({ onSelect }: ProductGridProps) {
+export function ProductGrid({ onSelect, stock }: ProductGridProps) {
   const { t, i18n } = useTranslation()
   const { data: products, isLoading } = useProducts()
   const [search, setSearch] = useState('')
@@ -57,31 +59,47 @@ export function ProductGrid({ onSelect }: ProductGridProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-        {filtered?.map((product) => (
-          <button
-            key={product.id}
-            onClick={() => onSelect(product)}
-            className="flex cursor-pointer flex-col items-center rounded-lg border p-3 transition-all hover:border-primary hover:shadow-md active:scale-95"
-          >
-            {product.imageUrl ? (
-              <img
-                src={product.imageUrl}
-                alt={product.name_en}
-                className="mb-2 h-16 w-16 rounded-md object-cover"
-              />
-            ) : (
-              <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-md bg-muted text-2xl">
-                🥖
-              </div>
-            )}
-            <p className="text-center text-sm font-medium leading-tight">
-              {i18n.language === 'am' ? product.name_am : product.name_en}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              ETB {(product.price / 100).toFixed(2)}
-            </p>
-          </button>
-        ))}
+        {filtered?.map((product) => {
+          const tracked = stock != null
+          const qty = tracked ? (stock[product.id] || 0) : null
+          const outOfStock = tracked && (qty as number) <= 0
+          return (
+            <button
+              key={product.id}
+              onClick={() => onSelect(product)}
+              disabled={outOfStock}
+              className="relative flex cursor-pointer flex-col items-center rounded-lg border p-3 transition-all hover:border-primary hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border disabled:hover:shadow-none"
+            >
+              {tracked && (
+                <span
+                  className={
+                    'absolute right-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ' +
+                    (outOfStock ? 'bg-destructive/10 text-destructive' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100')
+                  }
+                >
+                  {outOfStock ? t('pos.outOfStock') : qty}
+                </span>
+              )}
+              {product.imageUrl ? (
+                <img
+                  src={product.imageUrl}
+                  alt={product.name_en}
+                  className="mb-2 h-16 w-16 rounded-md object-cover"
+                />
+              ) : (
+                <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-md bg-muted text-2xl">
+                  🥖
+                </div>
+              )}
+              <p className="text-center text-sm font-medium leading-tight">
+                {i18n.language === 'am' ? product.name_am : product.name_en}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                ETB {(product.price / 100).toFixed(2)}
+              </p>
+            </button>
+          )
+        })}
       </div>
     </div>
   )

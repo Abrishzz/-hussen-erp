@@ -7,12 +7,18 @@ import { Toaster } from '@/components/ui/toaster'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import Pos from '@/pages/Pos'
+import MySales from '@/pages/MySales'
 import Products from '@/pages/Products'
 import Inventory from '@/pages/Inventory'
 import Production from '@/pages/Production'
 import HR from '@/pages/HR'
 import Finance from '@/pages/Finance'
 import Reports from '@/pages/Reports'
+import StaffReport from '@/pages/StaffReport'
+import Users from '@/pages/Users'
+import Branches from '@/pages/Branches'
+import Distribution from '@/pages/Distribution'
+import CashClose from '@/pages/CashClose'
 import Settings from '@/pages/Settings'
 import NotFound from '@/pages/NotFound'
 
@@ -38,10 +44,13 @@ function AppRoutes() {
         }
       >
         <Route path="/dashboard" element={
-          <ProtectedRoute allowedRoles={['owner']}><Dashboard /></ProtectedRoute>
+          <ProtectedRoute allowedRoles={['owner', 'manager']}><Dashboard /></ProtectedRoute>
         } />
         <Route path="/pos" element={
           <ProtectedRoute allowedRoles={['owner', 'cashier']}><Pos /></ProtectedRoute>
+        } />
+        <Route path="/my-sales" element={
+          <ProtectedRoute allowedRoles={['owner', 'cashier']}><MySales /></ProtectedRoute>
         } />
         <Route path="/products" element={
           <ProtectedRoute allowedRoles={['owner']}><Products /></ProtectedRoute>
@@ -59,7 +68,22 @@ function AppRoutes() {
           <ProtectedRoute allowedRoles={['owner']}><Finance /></ProtectedRoute>
         } />
         <Route path="/reports" element={
-          <ProtectedRoute allowedRoles={['owner']}><Reports /></ProtectedRoute>
+          <ProtectedRoute allowedRoles={['owner', 'manager']}><Reports /></ProtectedRoute>
+        } />
+        <Route path="/staff-report" element={
+          <ProtectedRoute allowedRoles={['owner', 'manager']}><StaffReport /></ProtectedRoute>
+        } />
+        <Route path="/distribution" element={
+          <ProtectedRoute allowedRoles={['owner', 'manager']}><Distribution /></ProtectedRoute>
+        } />
+        <Route path="/cash-close" element={
+          <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier']}><CashClose /></ProtectedRoute>
+        } />
+        <Route path="/branches" element={
+          <ProtectedRoute allowedRoles={['owner']}><Branches /></ProtectedRoute>
+        } />
+        <Route path="/users" element={
+          <ProtectedRoute allowedRoles={['owner']}><Users /></ProtectedRoute>
         } />
         <Route path="/settings" element={
           <ProtectedRoute allowedRoles={['owner']}><Settings /></ProtectedRoute>

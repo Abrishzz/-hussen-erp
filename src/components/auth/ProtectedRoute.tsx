@@ -14,6 +14,8 @@ export function roleHome(role: UserRole | null): string {
   switch (role) {
     case 'owner':
       return '/dashboard'
+    case 'manager':
+      return '/distribution'
     case 'cashier':
       return '/pos'
     case 'staff':

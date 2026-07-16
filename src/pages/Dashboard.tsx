@@ -1,13 +1,27 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { useNavigate } from 'react-router-dom'
-import { useTodaySales, useRawMaterials, useProductionBatches } from '@/hooks/useData'
+import {
+  useTodaySales, useRawMaterials, useProductionBatches, useSales, useUsers,
+} from '@/hooks/useData'
 import { formatCurrency } from '@/lib/utils'
+import { filterSalesByRange, salesByDay, paymentBreakdown } from '@/lib/analytics'
+import { StaffPerformanceView } from '@/features/reports/StaffPerformanceView'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  PieChart as RePieChart, Pie, Cell,
+} from 'recharts'
 import {
   DollarSign, ShoppingCart, AlertTriangle, Factory, TrendingUp, ArrowRight, Package,
 } from 'lucide-react'
+
+const PAY_COLORS: Record<string, string> = {
+  cash: '#27ae60', telebirr: '#2980b9', bank: '#8e44ad',
+}
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -15,6 +29,13 @@ export default function Dashboard() {
   const { data: sales, isLoading: salesLoading } = useTodaySales()
   const { data: materials } = useRawMaterials()
   const { data: batches } = useProductionBatches()
+  const { data: allSales } = useSales()
+  const { data: users } = useUsers()
+
+  const today = new Date().toISOString().split('T')[0]
+  const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
+  const [from, setFrom] = useState(sevenDaysAgo)
+  const [to, setTo] = useState(today)
 
   const todaySalesTotal = sales?.reduce((s, x) => s + x.total, 0) || 0
   const todaySalesCount = sales?.length || 0
@@ -22,9 +43,17 @@ export default function Dashboard() {
   const lowStockCount = materials?.filter((m) => m.currentQty <= m.reorderLevel).length || 0
   const todayBatches = batches?.filter((b) => {
     const d = b.date?.toDate?.() || new Date(b.date as unknown as string)
-    const today = new Date()
-    return d.toDateString() === today.toDateString()
+    const now = new Date()
+    return d.toDateString() === now.toDateString()
   }) || []
+
+  // ─── Ranged sales analysis ───
+  const rangedSales = filterSalesByRange(allSales, from, to)
+  const rangeRevenue = rangedSales.reduce((s, x) => s + x.total, 0)
+  const rangeOrders = rangedSales.length
+  const rangeAvg = rangeOrders ? Math.round(rangeRevenue / rangeOrders) : 0
+  const dayData = salesByDay(rangedSales).map((d) => ({ date: d.date.slice(5), total: d.total / 100 }))
+  const payData = paymentBreakdown(rangedSales).map((p) => ({ name: p.method, value: p.total / 100 }))
 
   return (
     <ErrorBoundary>
@@ -76,6 +105,76 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* ─── Sales Analysis (date-filtered) ─── */}
+        <Card>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="text-lg">{t('dashboard.salesAnalysis')}</CardTitle>
+            <div className="flex items-center gap-2">
+              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-36" />
+              <span className="text-muted-foreground">{t('reports.to')}</span>
+              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-36" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-lg border p-3">
+                <p className="text-sm text-muted-foreground">{t('finance.revenue')}</p>
+                <p className="text-xl font-bold">{formatCurrency(rangeRevenue)}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-sm text-muted-foreground">{t('pos.orderCount')}</p>
+                <p className="text-xl font-bold">{rangeOrders}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-sm text-muted-foreground">{t('common.average')}</p>
+                <p className="text-xl font-bold">{formatCurrency(rangeAvg)}</p>
+              </div>
+            </div>
+
+            {rangedSales.length > 0 ? (
+              <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <h4 className="mb-2 text-sm font-medium">{t('dashboard.dailySales')}</h4>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={dayData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: unknown) => `ETB ${Number(v).toFixed(2)}`} />
+                      <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div>
+                  <h4 className="mb-2 text-sm font-medium">{t('dashboard.paymentBreakdown')}</h4>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <RePieChart>
+                      <Pie data={payData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                        {payData.map((p) => (
+                          <Cell key={p.name} fill={PAY_COLORS[p.name] || '#94a3b8'} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v: unknown) => `ETB ${Number(v).toFixed(2)}`} />
+                    </RePieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : (
+              <p className="py-8 text-center text-muted-foreground">{t('reports.noData')}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ─── Staff Performance ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t('staffReport.performance')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StaffPerformanceView sales={rangedSales} users={users} compact />
+          </CardContent>
+        </Card>
 
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
@@ -149,9 +248,9 @@ export default function Dashboard() {
               <Factory className="mr-2 h-4 w-4" />
               {t('dashboard.newBatch')}
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/finance')}>
-              <DollarSign className="mr-2 h-4 w-4" />
-              {t('dashboard.addExpense')}
+            <Button variant="secondary" onClick={() => navigate('/staff-report')}>
+              <TrendingUp className="mr-2 h-4 w-4" />
+              {t('staffReport.title')}
             </Button>
           </CardContent>
         </Card>

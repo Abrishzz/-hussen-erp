@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   useSales, useRawMaterials, useProductionBatches,
-  useExpenses,
+  useExpenses, useUsers,
 } from '@/hooks/useData'
+import { StaffPerformanceView } from '@/features/reports/StaffPerformanceView'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,6 +35,7 @@ export default function Reports() {
   const { data: materials } = useRawMaterials()
   const { data: batches } = useProductionBatches()
   const { data: expenses } = useExpenses()
+  const { data: users } = useUsers()
 
 
   const filteredSales = sales?.filter((s) => {
@@ -98,6 +100,7 @@ export default function Reports() {
             <TabsTrigger value="expenses">{t('reports.expenseReport')}</TabsTrigger>
             <TabsTrigger value="profit">{t('reports.profitLoss')}</TabsTrigger>
             <TabsTrigger value="bestsellers">{t('reports.bestSellers')}</TabsTrigger>
+            <TabsTrigger value="staff">{t('staffReport.title')}</TabsTrigger>
           </TabsList>
 
           {/* ─── Sales Report ─── */}
@@ -371,6 +374,18 @@ export default function Reports() {
                 ) : (
                   <p className="py-12 text-center text-muted-foreground">{t('reports.noData')}</p>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── Staff Performance ─── */}
+          <TabsContent value="staff">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('staffReport.performance')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <StaffPerformanceView sales={filteredSales} users={users} />
               </CardContent>
             </Card>
           </TabsContent>

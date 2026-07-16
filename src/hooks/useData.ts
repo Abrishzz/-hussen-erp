@@ -7,6 +7,8 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  increment,
+  writeBatch,
   query,
   where,
   orderBy,
@@ -19,7 +21,9 @@ import { useAuthStore } from '@/store/authStore'
 import type {
   Product, Sale, RawMaterial, StockMovement, Supplier,
   Recipe, ProductionBatch, FinishedGood,
-  Employee, Attendance, Payroll, Expense,
+  Employee, Attendance, Payroll, Expense, SystemUser,
+  Branch, WarehouseStockItem, BranchStockItem, Distribution, DistributionLine,
+  CashClose, CashCloseReturn, CartItem,
 } from '@/types'
 
 export { where, orderBy, limit, Timestamp }
@@ -71,6 +75,20 @@ export function useRemove(collectionName: string) {
   return useMutation({
     mutationFn: (id: string) => deleteDoc(doc(db, collectionName, id)),
     onSuccess: () => qc.invalidateQueries({ queryKey: [collectionName] }),
+  })
+}
+
+// ─── Users (login accounts) ───
+export function useUsers() {
+  return useCollection<SystemUser>('users')
+}
+
+export function useUpdateUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<SystemUser> }) =>
+      updateDoc(doc(db, 'users', id), data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   })
 }
 
@@ -357,5 +375,219 @@ export function useDeleteExpense() {
   return useMutation({
     mutationFn: (id: string) => deleteDoc(doc(db, 'expenses', id)),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }),
+  })
+}
+
+// ─── Branches ───
+export function useBranches() {
+  return useCollection<Branch>('branches')
+}
+
+export function useActiveBranches() {
+  return useCollection<Branch>('branches', [where('isActive', '==', true)])
+}
+
+export function useAddBranch() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Omit<Branch, 'id'>) => addDoc(collection(db, 'branches'), data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['branches'] }),
+  })
+}
+
+export function useUpdateBranch() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Branch> }) =>
+      updateDoc(doc(db, 'branches', id), data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['branches'] }),
+  })
+}
+
+// ─── Warehouse (central) stock ───
+export function useWarehouseStock() {
+  return useCollection<WarehouseStockItem>('warehouseStock')
+}
+
+/**
+ * Manager confirms a produced batch: its actual quantity flows into the central
+ * warehouse pool and the batch is flagged confirmed.
+ */
+export function useConfirmBatch() {
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  return useMutation({
+    mutationFn: async (args: {
+      batchId: string
+      productId: string
+      name_en: string
+      name_am: string
+      qty: number
+    }) => {
+      const batch = writeBatch(db)
+      batch.set(
+        doc(db, 'warehouseStock', args.productId),
+        {
+          productId: args.productId,
+          name_en: args.name_en,
+          name_am: args.name_am,
+          qty: increment(args.qty),
+        },
+        { merge: true }
+      )
+      batch.update(doc(db, 'productionBatches', args.batchId), {
+        confirmed: true,
+        confirmedBy: user?.uid || '',
+        confirmedAt: Timestamp.now(),
+      })
+      await batch.commit()
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['warehouseStock'] })
+      qc.invalidateQueries({ queryKey: ['productionBatches'] })
+    },
+  })
+}
+
+// ─── Branch stock ───
+export function useBranchStock(branchId?: string) {
+  const constraints: QueryConstraint[] = []
+  if (branchId) constraints.push(where('branchId', '==', branchId))
+  return useCollection<BranchStockItem>('branchStock', constraints)
+}
+
+// ─── Distributions ───
+export function useDistributions() {
+  return useCollection<Distribution>('distributions', [orderBy('createdAt', 'desc')])
+}
+
+/**
+ * Manager distributes warehouse stock to branches: warehouse pool is debited and
+ * each branch's received stock is credited, atomically, with a distribution record.
+ */
+export function useDistribute() {
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  return useMutation({
+    mutationFn: async (lines: DistributionLine[]) => {
+      const batch = writeBatch(db)
+      for (const l of lines) {
+        batch.set(
+          doc(db, 'warehouseStock', l.productId),
+          { qty: increment(-l.qty) },
+          { merge: true }
+        )
+        batch.set(
+          doc(db, 'branchStock', `${l.branchId}_${l.productId}`),
+          {
+            branchId: l.branchId,
+            productId: l.productId,
+            name_en: l.name_en,
+            name_am: l.name_am,
+            qty: increment(l.qty),
+          },
+          { merge: true }
+        )
+      }
+      batch.set(doc(collection(db, 'distributions')), {
+        lines,
+        createdBy: user?.uid || '',
+        createdByName: user?.displayName || '',
+        createdAt: Timestamp.now(),
+      })
+      await batch.commit()
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['warehouseStock'] })
+      qc.invalidateQueries({ queryKey: ['branchStock'] })
+      qc.invalidateQueries({ queryKey: ['distributions'] })
+    },
+  })
+}
+
+/** Deducts branch stock for the sold cart items (called on POS checkout). */
+export function useDeductBranchStock() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ branchId, items }: { branchId: string; items: CartItem[] }) => {
+      const batch = writeBatch(db)
+      for (const it of items) {
+        batch.set(
+          doc(db, 'branchStock', `${branchId}_${it.product.id}`),
+          { qty: increment(-it.quantity) },
+          { merge: true }
+        )
+      }
+      await batch.commit()
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['branchStock'] }),
+  })
+}
+
+// ─── Cash closes ───
+export function useCashCloses(constraints: QueryConstraint[] = []) {
+  return useCollection<CashClose>('cashCloses', constraints.length ? constraints : [orderBy('submittedAt', 'desc')])
+}
+
+/**
+ * Branch end-of-day close: records the day's totals, and returns any unsold branch
+ * stock back to the central warehouse (per the "returned to central" policy).
+ */
+export function useSubmitCashClose() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (args: {
+      branchId: string
+      branchName: string
+      date: string
+      cashierId: string
+      cashierName: string
+      totalSales: number
+      orderCount: number
+      byPayment: { cash: number; telebirr: number; bank: number }
+    }) => {
+      // Read this branch's remaining stock and return it to the warehouse.
+      const stockSnap = await getDocs(
+        query(collection(db, 'branchStock'), where('branchId', '==', args.branchId))
+      )
+      const batch = writeBatch(db)
+      const returnedItems: CashCloseReturn[] = []
+      stockSnap.forEach((d) => {
+        const s = d.data() as BranchStockItem
+        if (s.qty > 0) {
+          returnedItems.push({ productId: s.productId, name_en: s.name_en, qty: s.qty })
+          batch.set(doc(db, 'warehouseStock', s.productId), { qty: increment(s.qty) }, { merge: true })
+          batch.update(d.ref, { qty: 0 })
+        }
+      })
+      batch.set(doc(collection(db, 'cashCloses')), {
+        ...args,
+        returnedItems,
+        status: 'submitted',
+        submittedAt: Timestamp.now(),
+      })
+      await batch.commit()
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['cashCloses'] })
+      qc.invalidateQueries({ queryKey: ['branchStock'] })
+      qc.invalidateQueries({ queryKey: ['warehouseStock'] })
+    },
+  })
+}
+
+/** Manager confirms a branch's cash close (money received). */
+export function useConfirmCashClose() {
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  return useMutation({
+    mutationFn: (id: string) =>
+      updateDoc(doc(db, 'cashCloses', id), {
+        status: 'confirmed',
+        confirmedBy: user?.uid || '',
+        confirmedByName: user?.displayName || '',
+        confirmedAt: Timestamp.now(),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cashCloses'] }),
   })
 }

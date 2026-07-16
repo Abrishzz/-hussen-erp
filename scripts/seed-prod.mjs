@@ -14,7 +14,7 @@
  * Idempotent: users are upserted, catalog collections are only seeded when empty.
  *
  * Demo logins (password for all: `password123`):
- *   owner@hussenbakery.com | cashier@hussenbakery.com | staff@hussenbakery.com
+ *   owner@hussenbakery.com | manager@hussenbakery.com | cashier@hussenbakery.com | staff@hussenbakery.com
  */
 import { initializeApp, applicationDefault } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
@@ -37,6 +37,7 @@ const db = getFirestore()
 const PASSWORD = 'password123'
 const users = [
   { email: 'owner@hussenbakery.com', displayName: 'Hussen (Owner)', role: 'owner' },
+  { email: 'manager@hussenbakery.com', displayName: 'Bereket (Manager)', role: 'manager' },
   { email: 'cashier@hussenbakery.com', displayName: 'Cashier One', role: 'cashier' },
   { email: 'staff@hussenbakery.com', displayName: 'Baker Staff', role: 'staff' },
 ]

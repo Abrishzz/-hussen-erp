@@ -2,6 +2,50 @@ import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import { formatCurrency, formatDate } from './utils'
 import type { Sale, RawMaterial, Expense, Payroll } from '@/types'
+import type { StaffPerformanceRow } from './analytics'
+
+export function exportStaffReportPDF(
+  rows: StaffPerformanceRow[],
+  from: string,
+  to: string,
+  lang: string
+) {
+  const doc = new jsPDF()
+  const title = lang === 'am' ? 'የሰራተኛ ሽያጭ ሪፖርት' : 'Staff Sales Report'
+
+  doc.setFontSize(18)
+  doc.text(title, 14, 20)
+  doc.setFontSize(10)
+  doc.text(`${from} - ${to}`, 14, 28)
+
+  const body = rows.map((r) => [
+    r.name,
+    r.orders.toString(),
+    r.itemsSold.toString(),
+    formatCurrency(r.revenue),
+    formatCurrency(r.avgOrder),
+  ])
+
+  doc.autoTable({
+    startY: 35,
+    head: [[
+      lang === 'am' ? 'ሰራተኛ' : 'Staff',
+      lang === 'am' ? 'ትዕዛዞች' : 'Orders',
+      lang === 'am' ? 'እቃዎች' : 'Items',
+      lang === 'am' ? 'ገቢ' : 'Revenue',
+      lang === 'am' ? 'አማካይ' : 'Avg Order',
+    ]],
+    body,
+  })
+
+  const total = rows.reduce((s, r) => s + r.revenue, 0)
+  doc.text(
+    `${lang === 'am' ? 'ጠቅላላ ገቢ' : 'Total Revenue'}: ${formatCurrency(total)}`,
+    14,
+    doc.lastAutoTable.finalY + 10
+  )
+  doc.save('staff-sales-report.pdf')
+}
 
 export function exportSalesReportPDF(sales: Sale[], from: string, to: string, lang: string) {
   const doc = new jsPDF()

@@ -1,6 +1,76 @@
 import type { Timestamp } from 'firebase/firestore'
 
-export type UserRole = 'owner' | 'cashier' | 'staff'
+export type UserRole = 'owner' | 'manager' | 'cashier' | 'staff'
+
+export interface Branch {
+  id: string
+  name: string
+  name_am?: string
+  location?: string
+  phone?: string
+  isActive: boolean
+  createdAt?: Timestamp
+}
+
+/** Central warehouse pool of confirmed finished goods, ready to distribute. Doc id = productId. */
+export interface WarehouseStockItem {
+  id: string
+  productId: string
+  name_en: string
+  name_am: string
+  qty: number
+}
+
+/** Per-branch received stock. Doc id = `${branchId}_${productId}`. */
+export interface BranchStockItem {
+  id: string
+  branchId: string
+  productId: string
+  name_en: string
+  name_am: string
+  qty: number
+}
+
+export interface DistributionLine {
+  branchId: string
+  branchName: string
+  productId: string
+  name_en: string
+  name_am: string
+  qty: number
+}
+
+export interface Distribution {
+  id: string
+  lines: DistributionLine[]
+  createdBy: string
+  createdByName?: string
+  createdAt: Timestamp
+}
+
+export interface CashCloseReturn {
+  productId: string
+  name_en: string
+  qty: number
+}
+
+export interface CashClose {
+  id: string
+  branchId: string
+  branchName: string
+  date: string // yyyy-mm-dd
+  cashierId: string
+  cashierName: string
+  totalSales: number
+  orderCount: number
+  byPayment: { cash: number; telebirr: number; bank: number }
+  returnedItems: CashCloseReturn[]
+  status: 'submitted' | 'confirmed'
+  submittedAt: Timestamp
+  confirmedBy?: string
+  confirmedByName?: string
+  confirmedAt?: Timestamp
+}
 
 export interface AppUser {
   uid: string
@@ -10,6 +80,20 @@ export interface AppUser {
   phone?: string
   isActive: boolean
   language?: 'en' | 'am'
+}
+
+/** A `/users/{uid}` document — the record used to manage login accounts. */
+export interface SystemUser {
+  id: string
+  email: string
+  displayName: string
+  role: UserRole
+  phone?: string
+  isActive: boolean
+  language?: 'en' | 'am'
+  /** For cashiers: the branch they sell at. */
+  branchId?: string
+  createdAt?: Timestamp
 }
 
 export interface Product {
@@ -39,6 +123,7 @@ export interface Sale {
   cashReceived?: number
   changeDue?: number
   cashierId: string
+  branchId?: string
   customerName?: string
   status: 'completed' | 'voided' | 'held'
   timestamp: Timestamp
@@ -116,6 +201,11 @@ export interface ProductionBatch {
   date: Timestamp
   cost: number
   notes?: string
+  /** Manager confirmed the produced quantity into the central warehouse. */
+  confirmed?: boolean
+  confirmedBy?: string
+  confirmedAt?: Timestamp
+  productId?: string
 }
 
 export interface FinishedGood {

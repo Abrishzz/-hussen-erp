@@ -6,7 +6,7 @@ import { auth } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Store, Languages, ShieldCheck, ShoppingCart, ChefHat, ChevronRight } from 'lucide-react'
+import { Store, Languages, ShieldCheck, ShoppingCart, ChefHat, Warehouse, ChevronRight } from 'lucide-react'
 import { roleHome } from '@/components/auth/ProtectedRoute'
 import { BakeryArt } from '@/components/BakeryArt'
 import type { UserRole } from '@/types'
@@ -20,6 +20,7 @@ interface DemoUser {
 const DEMO_PASSWORD = 'password123'
 const DEMO_USERS: DemoUser[] = [
   { email: 'owner@hussenbakery.com', role: 'owner', icon: ShieldCheck },
+  { email: 'manager@hussenbakery.com', role: 'manager', icon: Warehouse },
   { email: 'cashier@hussenbakery.com', role: 'cashier', icon: ShoppingCart },
   { email: 'staff@hussenbakery.com', role: 'staff', icon: ChefHat },
 ]

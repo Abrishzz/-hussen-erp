@@ -7,7 +7,7 @@ import {
 } from 'firebase/firestore'
 import { getStorage, connectStorageEmulator } from 'firebase/storage'
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -16,13 +16,14 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
+/** Whether the app is wired to the local Firebase Emulator Suite. */
+export const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true'
+
 const app = initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const storage = getStorage(app)
-
-const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true'
 
 if (useEmulators) {
   // Point the SDK at the locally running Firebase Emulator Suite.

@@ -33,6 +33,10 @@ service cloud.firestore {
       return hasRole('staff');
     }
 
+    function isManager() {
+      return hasRole('manager');
+    }
+
     // A user can read their own /users doc (needed for client-side role
     // resolution). Writes are owner-only (via the top-level rule).
     match /users/{userId} {
@@ -54,6 +58,42 @@ service cloud.firestore {
 
       // Staff: read only (to see production demand)
       allow read: if isStaff();
+      // Manager: read all branch sales (for cash confirmation)
+      allow read: if isManager();
+    }
+
+    // === BRANCHES COLLECTION ===
+    match /branches/{branchId} {
+      allow read: if isAuthenticated();
+      // Owner manages branches (create/rename/deactivate); manager can read.
+      // Owner writes are already granted by the top-level rule.
+    }
+
+    // === WAREHOUSE STOCK (central pool) ===
+    match /warehouseStock/{productId} {
+      allow read: if isAuthenticated();
+      // Manager confirms/distributes; cashier returns unsold stock at cash close.
+      allow write: if isManager() || isCashier();
+    }
+
+    // === BRANCH STOCK (received per branch) ===
+    match /branchStock/{stockId} {
+      allow read: if isAuthenticated();
+      // Manager distributes/returns; cashier deducts on sale.
+      allow write: if isManager() || isCashier();
+    }
+
+    // === DISTRIBUTIONS ===
+    match /distributions/{distId} {
+      allow read: if isManager() || isCashier() || isStaff();
+      allow create: if isManager();
+    }
+
+    // === CASH CLOSES ===
+    match /cashCloses/{closeId} {
+      allow read: if isManager() || isCashier();
+      allow create: if isCashier();
+      allow update: if isManager(); // confirm receipt
     }
 
     // === PRODUCTS COLLECTION ===
@@ -91,8 +131,9 @@ service cloud.firestore {
 
     // === PRODUCTION BATCHES COLLECTION ===
     match /productionBatches/{batchId} {
-      allow read: if isStaff() || isCashier();
+      allow read: if isStaff() || isCashier() || isManager();
       allow create, update: if isStaff();
+      allow update: if isManager(); // manager confirms produced quantity
     }
 
     // === FINISHED GOODS COLLECTION ===

@@ -1,0 +1,89 @@
+import type { Sale, SystemUser } from '@/types'
+
+/** Coerce a Firestore Timestamp / {seconds} / Date / ISO string into a JS Date. */
+export function toDate(value: unknown): Date {
+  if (!value) return new Date(0)
+  if (value instanceof Date) return value
+  const anyVal = value as { toDate?: () => Date; seconds?: number }
+  if (typeof anyVal.toDate === 'function') return anyVal.toDate()
+  if (typeof anyVal.seconds === 'number') return new Date(anyVal.seconds * 1000)
+  return new Date(value as string)
+}
+
+/** Inclusive date-range filter over sales using their `timestamp`. `from`/`to` are yyyy-mm-dd. */
+export function filterSalesByRange(sales: Sale[] | undefined, from: string, to: string): Sale[] {
+  if (!sales) return []
+  const start = new Date(from)
+  const end = new Date(to + 'T23:59:59')
+  return sales.filter((s) => {
+    const d = toDate(s.timestamp)
+    return d >= start && d <= end
+  })
+}
+
+export interface StaffPerformanceRow {
+  staffId: string
+  name: string
+  orders: number
+  revenue: number
+  itemsSold: number
+  avgOrder: number
+}
+
+/**
+ * Aggregates completed sales per cashier (staff). Names are resolved from the
+ * users collection; unknown ids fall back to a short id label.
+ */
+export function staffPerformance(
+  sales: Sale[],
+  users: SystemUser[] | undefined
+): StaffPerformanceRow[] {
+  const nameById = new Map<string, string>()
+  users?.forEach((u) => nameById.set(u.id, u.displayName || u.email || u.id))
+
+  const byStaff: Record<string, StaffPerformanceRow> = {}
+  sales.forEach((s) => {
+    const id = s.cashierId || 'unknown'
+    if (!byStaff[id]) {
+      byStaff[id] = {
+        staffId: id,
+        name: nameById.get(id) || `#${id.slice(0, 6)}`,
+        orders: 0,
+        revenue: 0,
+        itemsSold: 0,
+        avgOrder: 0,
+      }
+    }
+    const row = byStaff[id]
+    row.orders += 1
+    row.revenue += s.total
+    row.itemsSold += s.items.reduce((n, it) => n + it.quantity, 0)
+  })
+
+  return Object.values(byStaff)
+    .map((r) => ({ ...r, avgOrder: r.orders ? Math.round(r.revenue / r.orders) : 0 }))
+    .sort((a, b) => b.revenue - a.revenue)
+}
+
+/** Revenue totals keyed by yyyy-mm-dd (sorted ascending). Values in cents. */
+export function salesByDay(sales: Sale[]): { date: string; total: number; orders: number }[] {
+  const map: Record<string, { total: number; orders: number }> = {}
+  sales.forEach((s) => {
+    const key = toDate(s.timestamp).toISOString().split('T')[0]
+    if (!map[key]) map[key] = { total: 0, orders: 0 }
+    map[key].total += s.total
+    map[key].orders += 1
+  })
+  return Object.entries(map)
+    .map(([date, v]) => ({ date, total: v.total, orders: v.orders }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+}
+
+/** Revenue split by payment method. Values in cents. */
+export function paymentBreakdown(sales: Sale[]): { method: string; total: number }[] {
+  const map: Record<string, number> = {}
+  sales.forEach((s) => {
+    map[s.paymentMethod] = (map[s.paymentMethod] || 0) + s.total
+  })
+  return Object.entries(map).map(([method, total]) => ({ method, total }))
+}

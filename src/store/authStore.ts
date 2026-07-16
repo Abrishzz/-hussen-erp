@@ -5,9 +5,11 @@ import type { UserRole } from '@/types'
 interface AuthState {
   user: User | null
   role: UserRole | null
+  branchId: string | null
   loading: boolean
   setUser: (user: User | null) => void
   setRole: (role: UserRole | null) => void
+  setBranchId: (branchId: string | null) => void
   setLoading: (loading: boolean) => void
   clear: () => void
 }
@@ -15,9 +17,11 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   role: null,
+  branchId: null,
   loading: true,
   setUser: (user) => set({ user }),
   setRole: (role) => set({ role }),
+  setBranchId: (branchId) => set({ branchId }),
   setLoading: (loading) => set({ loading }),
-  clear: () => set({ user: null, role: null, loading: false }),
+  clear: () => set({ user: null, role: null, branchId: null, loading: false }),
 }))

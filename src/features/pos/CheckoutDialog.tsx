@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { posStore } from '@/lib/posStore'
-import { useAddSale } from '@/hooks/useData'
+import { useAddSale, useDeductBranchStock } from '@/hooks/useData'
 import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { now } from '@/lib/timestamp'
@@ -18,13 +18,16 @@ import type { SaleItem } from '@/types'
 interface CheckoutDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** When set, the sale is tagged to this branch and branch stock is deducted. */
+  branchId?: string | null
 }
 
-export function CheckoutDialog({ open, onOpenChange }: CheckoutDialogProps) {
+export function CheckoutDialog({ open, onOpenChange, branchId }: CheckoutDialogProps) {
   const { t, i18n } = useTranslation()
   const { user } = useAuthStore()
   const { settings } = useSettingsStore()
   const addSale = useAddSale()
+  const deductBranchStock = useDeductBranchStock()
   const [customerName, setCustomerName] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'telebirr' | 'bank'>('cash')
   const [cashReceived, setCashReceived] = useState('')
@@ -59,6 +62,7 @@ export function CheckoutDialog({ open, onOpenChange }: CheckoutDialogProps) {
         cashReceived: paymentMethod === 'cash' ? cashReceivedNum : 0,
         changeDue: paymentMethod === 'cash' ? changeDue : 0,
         cashierId: user?.uid || '',
+        branchId: branchId || '',
         customerName: customerName || '',
         status: 'completed' as const,
         timestamp: now(),
@@ -66,6 +70,11 @@ export function CheckoutDialog({ open, onOpenChange }: CheckoutDialogProps) {
 
       const saleRef = await addSale.mutateAsync(saleData)
       const saleWithId = { ...saleData, id: saleRef.id }
+
+      // Branch-scoped sale: draw down the branch's received stock.
+      if (branchId) {
+        await deductBranchStock.mutateAsync({ branchId, items: state.items })
+      }
 
       const shop = {
         name: settings.shopName,

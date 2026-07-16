@@ -4,22 +4,31 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
   ShoppingCart,
+  Receipt,
   Croissant,
   Package,
   Factory,
   Users,
+  UserCog,
   Wallet,
   BarChart3,
+  TrendingUp,
   Settings,
   MoreHorizontal,
+  Warehouse,
+  Banknote,
+  Building2,
 } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/store/authStore'
+import { useAuth } from '@/hooks/useAuth'
 import type { UserRole } from '@/types'
 
 interface TabItem {
@@ -30,14 +39,20 @@ interface TabItem {
 }
 
 const tabItems: TabItem[] = [
-  { label: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['owner'] },
+  { label: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'manager'] },
   { label: 'nav.pos', path: '/pos', icon: ShoppingCart, roles: ['owner', 'cashier'] },
+  { label: 'nav.mySales', path: '/my-sales', icon: Receipt, roles: ['owner', 'cashier'] },
+  { label: 'nav.cashClose', path: '/cash-close', icon: Banknote, roles: ['owner', 'manager', 'cashier'] },
+  { label: 'nav.distribution', path: '/distribution', icon: Warehouse, roles: ['owner', 'manager'] },
   { label: 'nav.inventory', path: '/inventory', icon: Package, roles: ['owner', 'staff'] },
   { label: 'nav.production', path: '/production', icon: Factory, roles: ['owner', 'staff'] },
   { label: 'nav.products', path: '/products', icon: Croissant, roles: ['owner'] },
   { label: 'nav.finance', path: '/finance', icon: Wallet, roles: ['owner'] },
   { label: 'nav.hr', path: '/hr', icon: Users, roles: ['owner'] },
-  { label: 'nav.reports', path: '/reports', icon: BarChart3, roles: ['owner'] },
+  { label: 'nav.reports', path: '/reports', icon: BarChart3, roles: ['owner', 'manager'] },
+  { label: 'nav.staffReport', path: '/staff-report', icon: TrendingUp, roles: ['owner', 'manager'] },
+  { label: 'nav.branches', path: '/branches', icon: Building2, roles: ['owner'] },
+  { label: 'nav.users', path: '/users', icon: UserCog, roles: ['owner'] },
   { label: 'nav.settings', path: '/settings', icon: Settings, roles: ['owner'] },
 ]
 
@@ -63,13 +78,17 @@ export function BottomTabBar() {
   const { t } = useTranslation()
   const location = useLocation()
   const { role } = useAuthStore()
+  const { logout } = useAuth()
 
   const allowed = tabItems.filter((tab) => role && tab.roles.includes(role))
-  const hasOverflow = allowed.length > MAX_PRIMARY + 1
+  // The "More" menu is always shown — it holds any overflow tabs plus Logout,
+  // so a signed-in user can always sign out from mobile (e.g. a cashier with a
+  // single POS tab would otherwise have no logout affordance).
+  const hasOverflow = allowed.length > MAX_PRIMARY
   const primary = hasOverflow ? allowed.slice(0, MAX_PRIMARY) : allowed
   const overflow = hasOverflow ? allowed.slice(MAX_PRIMARY) : []
   const overflowActive = overflow.some((o) => o.path === location.pathname)
-  const columns = primary.length + (overflow.length ? 1 : 0)
+  const columns = primary.length + 1
 
   return (
     <nav className="fixed inset-x-3 bottom-3 z-40 lg:hidden">
@@ -83,26 +102,32 @@ export function BottomTabBar() {
           </Link>
         ))}
 
-        {overflow.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger aria-label={t('common.actions')}>
-              <TabButton label={t('common.more')} icon={MoreHorizontal} active={overflowActive} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="end" className="mb-2 w-52">
-              {overflow.map((tab) => (
-                <DropdownMenuItem key={tab.path} asChild>
-                  <Link
-                    to={tab.path}
-                    className={cn('flex items-center gap-3', location.pathname === tab.path && 'text-primary')}
-                  >
-                    <tab.icon className="h-4 w-4" />
-                    {t(tab.label)}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger aria-label={t('common.actions')}>
+            <TabButton label={t('common.more')} icon={MoreHorizontal} active={overflowActive} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="end" className="mb-2 w-52">
+            {overflow.map((tab) => (
+              <DropdownMenuItem key={tab.path} asChild>
+                <Link
+                  to={tab.path}
+                  className={cn('flex items-center gap-3', location.pathname === tab.path && 'text-primary')}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {t(tab.label)}
+                </Link>
+              </DropdownMenuItem>
+            ))}
+            {overflow.length > 0 && <DropdownMenuSeparator />}
+            <DropdownMenuItem
+              onSelect={logout}
+              className="flex items-center gap-3 text-destructive focus:text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+              {t('nav.logout')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </nav>
   )

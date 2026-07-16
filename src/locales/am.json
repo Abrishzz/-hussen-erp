@@ -13,7 +13,13 @@
     "finance": "ፋይናንስ",
     "reports": "ሪፖርቶች",
     "settings": "ቅንብሮች",
-    "logout": "ዘግተህ ውጣ"
+    "logout": "ዘግተህ ውጣ",
+    "staffReport": "የሰራተኛ ሽያጭ ሪፖርት",
+    "users": "የተጠቃሚ አስተዳደር",
+    "mySales": "የኔ ሽያጭ",
+    "distribution": "ስርጭት",
+    "cashClose": "የገንዘብ ዝግ",
+    "branches": "ቅርንጫፎች"
   },
   "common": {
     "save": "አስቀምጥ",
@@ -91,7 +97,8 @@
     "roles": {
       "owner": "ባለቤት",
       "cashier": "ካሽየር",
-      "staff": "ዳቦ ሰሪ"
+      "staff": "ዳቦ ሰሪ",
+      "manager": "ስራ አስኪያጅ"
     }
   },
   "products": {
@@ -156,7 +163,11 @@
       "qty": "ብዛት",
       "total": "ጠቅላላ",
       "thankYou": "ግዢዎ እንደተሳካ እንመሰክራለን!"
-    }
+    },
+    "outOfStock": "የለም",
+    "insufficientStock": "{{name}} — በዚህ ቅርንጫፍ በቂ ክምችት የለም",
+    "noBranchTitle": "ቅርንጫፍ አልተመደበም",
+    "noBranchDesc": "መለያዎ ገና ከቅርንጫፍ ጋር አልተገናኘም። ከመሸጥዎ በፊት ባለቤቱ በተጠቃሚ አስተዳደር ውስጥ ቅርንጫፍ እንዲመድብልዎ ይጠይቁ።"
   },
   "inventory": {
     "title": "የጥሬ ዕቃ ክምችት",
@@ -207,7 +218,8 @@
       "in_progress": "በሂደት ላይ",
       "completed": "ተጠናቋል",
       "cancelled": "ተሰርዟል"
-    }
+    },
+    "product": "ምርት"
   },
   "hr": {
     "title": "የሰው ኃይል",
@@ -229,7 +241,21 @@
       "monthly": "በወር"
     },
     "leave": "የእረፍት አስተዳደር",
-    "hireDate": "የተቀጠሩበት ቀን"
+    "hireDate": "የተቀጠሩበት ቀን",
+    "selectEmployee": "መጀመሪያ ሰራተኛ ይምረጡ",
+    "attendanceSaved": "መገኘት ተመዝግቧል",
+    "attendanceHint": "መገኘትን ለመመዝገብ ሰራተኛ ይምረጡ እና ዝርዝሮችን ይሙሉ።",
+    "payrollHint": "ደመወዝ ለመገምገም እና ለመክፈል ወር ይምረጡ እና ደመወዝ ያመንጩ።",
+    "salaryPaid": "ደመወዝ ለ{{name}} ተከፍሏል",
+    "paySalary": "ደመወዝ ክፈል",
+    "paid": "ተከፍሏል",
+    "totalPayroll": "ጠቅላላ ደመወዝ",
+    "attendanceStatus": {
+      "present": "ተገኝቷል",
+      "absent": "አልተገኘም",
+      "late": "ዘግይቷል",
+      "half-day": "ግማሽ ቀን"
+    }
   },
   "finance": {
     "title": "ፋይናንስ እና ሂሳብ",
@@ -265,7 +291,8 @@
     "dateRange": "የቀን ክልል",
     "generate": "ሪፖርት አዘጋጅ",
     "exportPdf": "እንደ ፒዲኤፍ ላክ",
-    "noData": "ለተመረጠው ጊዜ ምንም መረጃ የለም"
+    "noData": "ለተመረጠው ጊዜ ምንም መረጃ የለም",
+    "to": "እስከ"
   },
   "settings": {
     "title": "የስርዓት ቅንብሮች",
@@ -293,7 +320,10 @@
     "newSale": "አዲስ ሽያጭ",
     "addStock": "ክምችት ጨምር",
     "newBatch": "አዲስ ድብልቅ",
-    "addExpense": "ወጪ ጨምር"
+    "addExpense": "ወጪ ጨምር",
+    "salesAnalysis": "የሽያጭ ትንተና",
+    "dailySales": "ዕለታዊ ሽያጭ",
+    "paymentBreakdown": "የክፍያ ስብጥር"
   },
   "errors": {
     "pageNotFound": "ገጹ አልተገኘም",
@@ -304,5 +334,101 @@
     "tryAgain": "እባክዎ እንደገና ይሞክሩ ወይም ድጋፍ ያግኙ።",
     "networkError": "የአውታረ መረብ ስህተት። ግንኙነትዎን ያረጋግጡ።",
     "offline": "ከመስመር ውጭ ነዎት። አንዳንድ ባህሪያት ሊገደቡ ይችላሉ።"
+  },
+  "users": {
+    "title": "የተጠቃሚ አስተዳደር",
+    "subtitle": "ለድረ-ገጹ የመግቢያ መለያዎችን ይፍጠሩ እና ያስተዳድሩ",
+    "createUser": "ተጠቃሚ ፍጠር",
+    "createHint": "አዲሱ መለያ ባስገቡት ኢሜይል እና የይለፍ ቃል ወዲያውኑ መግባት ይችላል።",
+    "role": "ሚና",
+    "roles": {
+      "owner": "ባለቤት",
+      "cashier": "ገንዘብ ተቀባይ",
+      "staff": "ዳቦ ጋጋሪ / ሰራተኛ",
+      "manager": "ስራ አስኪያጅ"
+    },
+    "activate": "አግብር",
+    "deactivate": "አቦዝን",
+    "activateConfirm": "ተጠቃሚው እንደገና እንዲገባ ይህን መለያ እንደገና ማግበር?",
+    "deactivateConfirm": "ይህን መለያ ማቦዘን? መዝገቡ ይቆያል ግን እንደ ንቁ ያልሆነ ይመዘገባል።",
+    "createdToast": "ለ{{name}} መለያ ተፈጥሯል",
+    "roleUpdated": "ሚና ተስተካክሏል",
+    "emailInUse": "ይህ ኢሜይል አስቀድሞ ተመዝግቧል",
+    "createFailed": "መለያውን መፍጠር አልተቻለም",
+    "updateFailed": "መለያውን ማዘመን አልተቻለም",
+    "passwordTooShort": "የይለፍ ቃል ቢያንስ 6 ቁምፊዎች መሆን አለበት"
+  },
+  "staffReport": {
+    "title": "የሰራተኛ ሽያጭ ሪፖርት",
+    "subtitle": "ለተመረጠው ጊዜ በገንዘብ ተቀባይ የሽያጭ አፈጻጸም",
+    "performance": "የሰራተኛ አፈጻጸም",
+    "staff": "ሰራተኛ",
+    "itemsSold": "የተሸጡ እቃዎች",
+    "avgOrder": "አማካይ ትዕዛዝ",
+    "topPerformer": "ከፍተኛ አፈጻጸም"
+  },
+  "mySales": {
+    "title": "የኔ ዕለታዊ ሽያጭ",
+    "subtitle": "ለተመረጠው ቀን የራስዎ ሽያጭ",
+    "mySalesTotal": "የኔ ጠቅላላ ሽያጭ",
+    "transactions": "ግብይቶች"
+  },
+  "branches": {
+    "title": "ቅርንጫፎች",
+    "subtitle": "የዳቦ ቤት ቅርንጫፎችዎን ያስተዳድሩ",
+    "branch": "ቅርንጫፍ",
+    "addBranch": "ቅርንጫፍ ጨምር",
+    "nameEn": "ስም (እንግሊዝኛ)",
+    "nameAm": "ስም (አማርኛ)",
+    "location": "አካባቢ",
+    "selectBranch": "ቅርንጫፍ ይምረጡ",
+    "unassigned": "ያልተመደበ",
+    "activate": "ቅርንጫፍ አግብር",
+    "deactivate": "ቅርንጫፍ አቦዝን",
+    "activateConfirm": "ይህን ቅርንጫፍ እንደገና ማግበር?",
+    "deactivateConfirm": "ይህን ቅርንጫፍ ማቦዘን? ከስርጭትና ከአዲስ ምደባዎች ይደበቃል።"
+  },
+  "distribution": {
+    "title": "መጋዘንና ስርጭት",
+    "subtitle": "ምርትን ያረጋግጡ እና ክምችትን ወደ ቅርንጫፎች ያሰራጩ",
+    "confirmProduction": "ምርት አረጋግጥ",
+    "warehouseDistribute": "መጋዘንና ስርጭት",
+    "history": "ታሪክ",
+    "pendingConfirmation": "ተመርቷል — ማረጋገጫ በመጠበቅ ላይ",
+    "noPending": "ማረጋገጫ የሚጠብቅ ምርት የለም።",
+    "confirm": "አረጋግጥ",
+    "confirmedToast": "ምርት ወደ መጋዘን ተረጋግጧል",
+    "noProductLink": "ይህ ባች የተገናኘ ምርት የለውም፤ መጀመሪያ የምግብ አሰራሩን/ምርቱን ያዘጋጁ።",
+    "warehouseStock": "የመጋዘን ክምችት",
+    "available": "ያለ",
+    "distribute": "አሰራጭ",
+    "selectProduct": "ምርት ይምረጡ",
+    "remainingInWarehouse": "በመጋዘን የቀረ",
+    "exceedsWarehouse": "ጠቅላላው ካለው የመጋዘን ክምችት ይበልጣል",
+    "enterQty": "ቢያንስ ለአንድ ቅርንጫፍ ብዛት ያስገቡ",
+    "distributedToast": "ወደ ቅርንጫፎች ተሰራጭቷል"
+  },
+  "cashClose": {
+    "title": "የገንዘብ ዝግ",
+    "managerTitle": "የገንዘብ ማረጋገጫ",
+    "managerSubtitle": "ከቅርንጫፎች የተቀበሉትን ገንዘብ ይገምግሙና ያረጋግጡ",
+    "todayTotal": "የዛሬ ድምር",
+    "itemsToReturn": "የሚመለሱ እቃዎች",
+    "paymentBreakdown": "የክፍያ ስብጥር",
+    "unsoldReturn": "ያልተሸጠ ክምችት ወደ መጋዘን ተመልሷል",
+    "closeDay": "ቀን ዝጋና አስገባ",
+    "submittedToast": "ቀኑ ተዘግቶ ለማረጋገጫ ቀርቧል",
+    "alreadyClosed": "ይህ ቅርንጫፍ ለዛሬ አስቀድሞ ተዘግቷል",
+    "cashier": "ገንዘብ ተቀባይ",
+    "confirmReceived": "ተቀብያለሁ አረጋግጥ",
+    "confirmedToast": "ገንዘቡ እንደተቀበለ ተረጋግጧል",
+    "awaitingConfirmation": "ማረጋገጫ በመጠበቅ ላይ",
+    "noneAwaiting": "ማረጋገጫ የሚጠብቅ የቅርንጫፍ ዝግ የለም።",
+    "confirmedHistory": "ተረጋግጧል",
+    "confirmedBy": "ያረጋገጠው",
+    "status": {
+      "submitted": "ቀርቧል",
+      "confirmed": "ተረጋግጧል"
+    }
   }
 }

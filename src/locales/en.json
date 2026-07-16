@@ -13,7 +13,13 @@
     "finance": "Finance",
     "reports": "Reports",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "staffReport": "Staff Sales Report",
+    "users": "User Management",
+    "mySales": "My Sales",
+    "distribution": "Distribution",
+    "cashClose": "Cash Close",
+    "branches": "Branches"
   },
   "common": {
     "save": "Save",
@@ -91,7 +97,8 @@
     "roles": {
       "owner": "Owner",
       "cashier": "Cashier",
-      "staff": "Baker / Staff"
+      "staff": "Baker / Staff",
+      "manager": "Manager"
     }
   },
   "products": {
@@ -156,7 +163,11 @@
       "qty": "Qty",
       "total": "Total",
       "thankYou": "Thank you for your purchase!"
-    }
+    },
+    "outOfStock": "Out",
+    "insufficientStock": "{{name}} — not enough stock at this branch",
+    "noBranchTitle": "No branch assigned",
+    "noBranchDesc": "Your account is not linked to a branch yet. Ask the owner to assign you to a branch in User Management before selling."
   },
   "inventory": {
     "title": "Raw Materials Inventory",
@@ -207,7 +218,8 @@
       "in_progress": "In Progress",
       "completed": "Completed",
       "cancelled": "Cancelled"
-    }
+    },
+    "product": "Product"
   },
   "hr": {
     "title": "Human Resources",
@@ -229,7 +241,21 @@
       "monthly": "Monthly"
     },
     "leave": "Leave Management",
-    "hireDate": "Hire Date"
+    "hireDate": "Hire Date",
+    "selectEmployee": "Select an employee first",
+    "attendanceSaved": "Attendance recorded",
+    "attendanceHint": "Select an employee and fill in details to record attendance.",
+    "payrollHint": "Pick a month and generate payroll to review and pay salaries.",
+    "salaryPaid": "Salary paid to {{name}}",
+    "paySalary": "Pay Salary",
+    "paid": "Paid",
+    "totalPayroll": "Total Payroll",
+    "attendanceStatus": {
+      "present": "Present",
+      "absent": "Absent",
+      "late": "Late",
+      "half-day": "Half Day"
+    }
   },
   "finance": {
     "title": "Finance & Accounting",
@@ -265,7 +291,8 @@
     "dateRange": "Date Range",
     "generate": "Generate Report",
     "exportPdf": "Export as PDF",
-    "noData": "No data available for the selected period"
+    "noData": "No data available for the selected period",
+    "to": "to"
   },
   "settings": {
     "title": "System Settings",
@@ -293,7 +320,10 @@
     "newSale": "New Sale",
     "addStock": "Add Stock",
     "newBatch": "New Batch",
-    "addExpense": "Add Expense"
+    "addExpense": "Add Expense",
+    "salesAnalysis": "Sales Analysis",
+    "dailySales": "Daily Sales",
+    "paymentBreakdown": "Payment Breakdown"
   },
   "errors": {
     "pageNotFound": "Page Not Found",
@@ -304,5 +334,101 @@
     "tryAgain": "Please try again or contact support.",
     "networkError": "Network error. Please check your connection.",
     "offline": "You are offline. Some features may be limited."
+  },
+  "users": {
+    "title": "User Management",
+    "subtitle": "Create and manage login accounts for the site",
+    "createUser": "Create User",
+    "createHint": "The new account can sign in immediately with the email and password you set.",
+    "role": "Role",
+    "roles": {
+      "owner": "Owner",
+      "cashier": "Cashier",
+      "staff": "Baker / Staff",
+      "manager": "Manager"
+    },
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "activateConfirm": "Re-activate this account so the user can sign in again?",
+    "deactivateConfirm": "Deactivate this account? The user record is kept but marked inactive.",
+    "createdToast": "Account created for {{name}}",
+    "roleUpdated": "Role updated",
+    "emailInUse": "That email is already registered",
+    "createFailed": "Could not create the account",
+    "updateFailed": "Could not update the account",
+    "passwordTooShort": "Password must be at least 6 characters"
+  },
+  "staffReport": {
+    "title": "Staff Sales Report",
+    "subtitle": "Sales performance by cashier for the selected period",
+    "performance": "Staff Performance",
+    "staff": "Staff",
+    "itemsSold": "Items Sold",
+    "avgOrder": "Avg Order",
+    "topPerformer": "Top Performer"
+  },
+  "mySales": {
+    "title": "My Daily Sales",
+    "subtitle": "Your own sales for the selected day",
+    "mySalesTotal": "My Sales Total",
+    "transactions": "Transactions"
+  },
+  "branches": {
+    "title": "Branches",
+    "subtitle": "Manage your bakery branches",
+    "branch": "Branch",
+    "addBranch": "Add Branch",
+    "nameEn": "Name (English)",
+    "nameAm": "Name (Amharic)",
+    "location": "Location",
+    "selectBranch": "Select branch",
+    "unassigned": "Unassigned",
+    "activate": "Activate branch",
+    "deactivate": "Deactivate branch",
+    "activateConfirm": "Re-activate this branch?",
+    "deactivateConfirm": "Deactivate this branch? It will be hidden from distribution and new assignments."
+  },
+  "distribution": {
+    "title": "Warehouse & Distribution",
+    "subtitle": "Confirm production and distribute stock to branches",
+    "confirmProduction": "Confirm Production",
+    "warehouseDistribute": "Warehouse & Distribute",
+    "history": "History",
+    "pendingConfirmation": "Produced — pending confirmation",
+    "noPending": "No production waiting for confirmation.",
+    "confirm": "Confirm",
+    "confirmedToast": "Production confirmed into warehouse",
+    "noProductLink": "This batch has no linked product; set its recipe/product first.",
+    "warehouseStock": "Warehouse Stock",
+    "available": "Available",
+    "distribute": "Distribute",
+    "selectProduct": "Select a product",
+    "remainingInWarehouse": "Remaining in warehouse",
+    "exceedsWarehouse": "Total exceeds available warehouse stock",
+    "enterQty": "Enter a quantity for at least one branch",
+    "distributedToast": "Distributed to branches"
+  },
+  "cashClose": {
+    "title": "Cash Close",
+    "managerTitle": "Cash Confirmation",
+    "managerSubtitle": "Review and confirm money received from branches",
+    "todayTotal": "Today's Total",
+    "itemsToReturn": "Items to Return",
+    "paymentBreakdown": "Payment Breakdown",
+    "unsoldReturn": "Unsold stock returned to warehouse",
+    "closeDay": "Close Day & Submit",
+    "submittedToast": "Day closed and submitted for confirmation",
+    "alreadyClosed": "This branch is already closed for today",
+    "cashier": "Cashier",
+    "confirmReceived": "Confirm Received",
+    "confirmedToast": "Cash confirmed as received",
+    "awaitingConfirmation": "Awaiting Confirmation",
+    "noneAwaiting": "No branch closes awaiting confirmation.",
+    "confirmedHistory": "Confirmed",
+    "confirmedBy": "Confirmed By",
+    "status": {
+      "submitted": "Submitted",
+      "confirmed": "Confirmed"
+    }
   }
 }
