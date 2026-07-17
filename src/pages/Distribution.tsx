@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next'
 import {
   useProductionBatches, useRecipes, useConfirmBatch,
   useWarehouseStock, useActiveBranches, useDistribute, useDistributions,
+  useBranchStock,
 } from '@/hooks/useData'
+import { downloadSpreadsheet } from '@/lib/excel'
+import { Download } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
 import { toDate } from '@/lib/analytics'
 import { formatDate } from '@/lib/utils'
@@ -42,10 +45,12 @@ function DistributionContent() {
         <TabsList>
           <TabsTrigger value="confirm">{t('distribution.confirmProduction')}</TabsTrigger>
           <TabsTrigger value="distribute">{t('distribution.warehouseDistribute')}</TabsTrigger>
+          <TabsTrigger value="byBranch">{t('distribution.byBranch')}</TabsTrigger>
           <TabsTrigger value="history">{t('distribution.history')}</TabsTrigger>
         </TabsList>
         <TabsContent value="confirm"><ConfirmTab /></TabsContent>
         <TabsContent value="distribute"><DistributeTab /></TabsContent>
+        <TabsContent value="byBranch"><ByBranchTab /></TabsContent>
         <TabsContent value="history"><HistoryTab /></TabsContent>
       </Tabs>
     </div>
@@ -288,6 +293,97 @@ function HistoryTab() {
             ))}
           </div>
         )}
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * What each branch is currently holding, as a product × branch matrix. This is
+ * the "who has what" view — the History tab answers "what was sent when".
+ */
+function ByBranchTab() {
+  const { t } = useTranslation()
+  const { data: branches } = useActiveBranches()
+  const { data: branchStock } = useBranchStock()
+  const { data: warehouse } = useWarehouseStock()
+
+  const activeBranches = branches || []
+  // Every product that exists anywhere (warehouse or a branch), by name.
+  const products = new Map<string, string>()
+  ;(warehouse || []).forEach((w) => products.set(w.productId, w.name_en))
+  ;(branchStock || []).forEach((s) => products.set(s.productId, s.name_en))
+
+  const qtyFor = (branchId: string, productId: string) =>
+    (branchStock || []).find((s) => s.branchId === branchId && s.productId === productId)?.qty ?? 0
+
+  const rows = [...products.entries()].sort((a, b) => a[1].localeCompare(b[1]))
+
+  const exportRows = rows.map(([pid, name]) => [
+    name,
+    warehouse?.find((w) => w.productId === pid)?.qty ?? 0,
+    ...activeBranches.map((b) => qtyFor(b.id, pid)),
+    activeBranches.reduce((n, b) => n + qtyFor(b.id, pid), 0),
+  ])
+
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">{t('reports.noData')}</CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle className="text-base sm:text-lg">{t('distribution.byBranch')}</CardTitle>
+        <Button size="sm" variant="outline" className="w-full sm:w-auto"
+          onClick={() => downloadSpreadsheet(
+            `branch-stock-${new Date().toISOString().split('T')[0]}`,
+            [t('production.product'), t('distribution.warehouseStock'), ...activeBranches.map((b) => b.name), t('common.total')],
+            exportRows
+          )}>
+          <Download className="mr-1 h-4 w-4" /> {t('reports.excel')}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[9rem]">{t('production.product')}</TableHead>
+                <TableHead className="text-right">{t('distribution.warehouseStock')}</TableHead>
+                {activeBranches.map((b) => (
+                  <TableHead key={b.id} className="whitespace-nowrap text-right">{b.name}</TableHead>
+                ))}
+                <TableHead className="text-right">{t('common.total')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map(([pid, name]) => {
+                const atBranches = activeBranches.reduce((n, b) => n + qtyFor(b.id, pid), 0)
+                return (
+                  <TableRow key={pid}>
+                    <TableCell className="font-medium">{name}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {warehouse?.find((w) => w.productId === pid)?.qty ?? 0}
+                    </TableCell>
+                    {activeBranches.map((b) => {
+                      const q = qtyFor(b.id, pid)
+                      return (
+                        <TableCell key={b.id} className={'text-right ' + (q === 0 ? 'text-muted-foreground/50' : 'font-medium')}>
+                          {q}
+                        </TableCell>
+                      )
+                    })}
+                    <TableCell className="text-right font-bold">{atBranches}</TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   )

@@ -19,7 +19,8 @@
     "mySales": "My Sales",
     "distribution": "Distribution",
     "cashClose": "Cash Close",
-    "branches": "Branches"
+    "branches": "Branches",
+    "branchReport": "Branch Report"
   },
   "common": {
     "save": "Save",
@@ -81,7 +82,8 @@
     "average": "Average",
     "trend": "Trend",
     "breakdown": "Breakdown",
-    "preferences": "Preferences"
+    "preferences": "Preferences",
+    "image": "Image"
   },
   "auth": {
     "login": "Login",
@@ -114,7 +116,13 @@
     "activeHint": "Active products appear in the POS",
     "confirmDelete": "Delete \"{{name}}\"? This cannot be undone.",
     "noProducts": "No products yet. Add your first product to get started.",
-    "searchPlaceholder": "Search products..."
+    "searchPlaceholder": "Search products...",
+    "available": "Available",
+    "warehouseShort": "WH",
+    "branchesShort": "Br",
+    "warehouseQty": "Quantity",
+    "warehouseQtyHint": "Quantity held in the central warehouse, ready to distribute to branches.",
+    "categoryPlaceholder": "Pick or type a new category"
   },
   "pos": {
     "title": "Point of Sale",
@@ -296,7 +304,10 @@
     "generate": "Generate Report",
     "exportPdf": "Export as PDF",
     "noData": "No data available for the selected period",
-    "to": "to"
+    "to": "to",
+    "excel": "Excel",
+    "activitySheet": "Activity Sheet",
+    "staffDaily": "Staff Daily Sales"
   },
   "settings": {
     "title": "System Settings",
@@ -327,7 +338,8 @@
     "addExpense": "Add Expense",
     "salesAnalysis": "Sales Analysis",
     "dailySales": "Daily Sales",
-    "paymentBreakdown": "Payment Breakdown"
+    "paymentBreakdown": "Payment Breakdown",
+    "salesByBranch": "Today's Sales by Branch"
   },
   "errors": {
     "pageNotFound": "Page Not Found",
@@ -410,7 +422,8 @@
     "remainingInWarehouse": "Remaining in warehouse",
     "exceedsWarehouse": "Total exceeds available warehouse stock",
     "enterQty": "Enter a quantity for at least one branch",
-    "distributedToast": "Distributed to branches"
+    "distributedToast": "Distributed to branches",
+    "byBranch": "Stock by Branch"
   },
   "cashClose": {
     "title": "Cash Close",
@@ -433,7 +446,9 @@
     "status": {
       "submitted": "Submitted",
       "confirmed": "Confirmed"
-    }
+    },
+    "byBranch": "Cash by Branch",
+    "notClosed": "Not closed"
   },
   "notifications": {
     "allClear": "You're all caught up",
@@ -444,5 +459,14 @@
     "branchEmptyDesc": "Nothing left to sell — ask the manager to distribute stock.",
     "dayNotClosedTitle": "Today's sales not closed yet",
     "dayNotClosedDesc": "{{count}} order(s) today — close the day to hand over cash."
+  },
+  "branchReport": {
+    "title": "Branch Report",
+    "subtitle": "Daily stock received from the manager, and what the branch sold",
+    "received": "Received",
+    "sold": "Sold",
+    "remaining": "Remaining",
+    "totalReceived": "Total Received",
+    "totalSold": "Total Sold"
   }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useProducts, useDeleteProduct } from '@/hooks/useData'
+import { useProducts, useDeleteProduct, useWarehouseStock, useBranchStock } from '@/hooks/useData'
 import { ProductForm } from '@/features/pos/ProductForm'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { DataTable } from '@/components/ui/data-table'
@@ -14,10 +14,17 @@ import type { Product } from '@/types'
 export default function Products() {
   const { t } = useTranslation()
   const { data: products, isLoading } = useProducts()
+  const { data: warehouse } = useWarehouseStock()
+  const { data: branchStock } = useBranchStock()
   const deleteProduct = useDeleteProduct()
   const [formOpen, setFormOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+
+  // What's on hand = the central warehouse plus whatever the branches still hold.
+  const warehouseQty = (id: string) => warehouse?.find((w) => w.productId === id)?.qty ?? 0
+  const branchesQty = (id: string) =>
+    (branchStock || []).filter((s) => s.productId === id).reduce((n, s) => n + s.qty, 0)
 
   const columns = [
     {
@@ -48,6 +55,23 @@ export default function Products() {
       cell: (p: Product) => formatCurrency(p.price),
     },
     {
+      key: 'available',
+      header: t('products.available'),
+      cell: (p: Product) => {
+        const wh = warehouseQty(p.id)
+        const br = branchesQty(p.id)
+        const total = wh + br
+        return (
+          <div className="whitespace-nowrap">
+            <span className={total > 0 ? 'font-medium' : 'font-medium text-muted-foreground'}>{total}</span>
+            <span className="ml-1 text-xs text-muted-foreground">
+              ({t('products.warehouseShort')} {wh} · {t('products.branchesShort')} {br})
+            </span>
+          </div>
+        )
+      },
+    },
+    {
       key: 'status',
       header: t('common.status'),
       cell: (p: Product) => (
@@ -75,11 +99,11 @@ export default function Products() {
   return (
     <ErrorBoundary>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t('pos.title')} - {t('common.create')}</h1>
-          <Button onClick={() => { setEditProduct(null); setFormOpen(true) }}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-xl font-bold sm:text-2xl">{t('nav.products')}</h1>
+          <Button size="sm" onClick={() => { setEditProduct(null); setFormOpen(true) }}>
             <Plus className="mr-2 h-4 w-4" />
-            {t('common.create')}
+            {t('products.addProduct')}
           </Button>
         </div>
 

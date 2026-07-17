@@ -19,7 +19,8 @@
     "mySales": "የኔ ሽያጭ",
     "distribution": "ስርጭት",
     "cashClose": "የገንዘብ ዝግ",
-    "branches": "ቅርንጫፎች"
+    "branches": "ቅርንጫፎች",
+    "branchReport": "የቅርንጫፍ ሪፖርት"
   },
   "common": {
     "save": "አስቀምጥ",
@@ -81,7 +82,8 @@
     "average": "አማካይ",
     "trend": "አዝማሚያ",
     "breakdown": "ክፍፍል",
-    "preferences": "ምርጫዎች"
+    "preferences": "ምርጫዎች",
+    "image": "ምስል"
   },
   "auth": {
     "login": "ግባ",
@@ -114,7 +116,13 @@
     "activeHint": "ንቁ ምርቶች በሽያጭ ቦታ ይታያሉ",
     "confirmDelete": "\"{{name}}\" ይሰረዝ? ይህ መቀልበስ አይቻልም።",
     "noProducts": "እስካሁን ምንም ምርት የለም። ለመጀመር የመጀመሪያ ምርትዎን ይጨምሩ።",
-    "searchPlaceholder": "ምርቶችን ይፈልጉ..."
+    "searchPlaceholder": "ምርቶችን ይፈልጉ...",
+    "available": "ያለ",
+    "warehouseShort": "መጋዘን",
+    "branchesShort": "ቅርንጫፍ",
+    "warehouseQty": "ብዛት",
+    "warehouseQtyHint": "በማዕከላዊ መጋዘን ያለው ብዛት፣ ወደ ቅርንጫፎች ለማሰራጨት ዝግጁ።",
+    "categoryPlaceholder": "ይምረጡ ወይም አዲስ ምድብ ይጻፉ"
   },
   "pos": {
     "title": "የሽያጭ ቦታ",
@@ -296,7 +304,10 @@
     "generate": "ሪፖርት አዘጋጅ",
     "exportPdf": "እንደ ፒዲኤፍ ላክ",
     "noData": "ለተመረጠው ጊዜ ምንም መረጃ የለም",
-    "to": "እስከ"
+    "to": "እስከ",
+    "excel": "ኤክሴል",
+    "activitySheet": "የእንቅስቃሴ ሉህ",
+    "staffDaily": "የሰራተኛ ዕለታዊ ሽያጭ"
   },
   "settings": {
     "title": "የስርዓት ቅንብሮች",
@@ -327,7 +338,8 @@
     "addExpense": "ወጪ ጨምር",
     "salesAnalysis": "የሽያጭ ትንተና",
     "dailySales": "ዕለታዊ ሽያጭ",
-    "paymentBreakdown": "የክፍያ ስብጥር"
+    "paymentBreakdown": "የክፍያ ስብጥር",
+    "salesByBranch": "የዛሬ ሽያጭ በቅርንጫፍ"
   },
   "errors": {
     "pageNotFound": "ገጹ አልተገኘም",
@@ -410,7 +422,8 @@
     "remainingInWarehouse": "በመጋዘን የቀረ",
     "exceedsWarehouse": "ጠቅላላው ካለው የመጋዘን ክምችት ይበልጣል",
     "enterQty": "ቢያንስ ለአንድ ቅርንጫፍ ብዛት ያስገቡ",
-    "distributedToast": "ወደ ቅርንጫፎች ተሰራጭቷል"
+    "distributedToast": "ወደ ቅርንጫፎች ተሰራጭቷል",
+    "byBranch": "ክምችት በቅርንጫፍ"
   },
   "cashClose": {
     "title": "የገንዘብ ዝግ",
@@ -433,7 +446,9 @@
     "status": {
       "submitted": "ቀርቧል",
       "confirmed": "ተረጋግጧል"
-    }
+    },
+    "byBranch": "ገንዘብ በቅርንጫፍ",
+    "notClosed": "አልተዘጋም"
   },
   "notifications": {
     "allClear": "ሁሉም ነገር ተከናውኗል",
@@ -444,5 +459,14 @@
     "branchEmptyDesc": "የሚሸጥ ነገር የለም — ስራ አስኪያጁ ክምችት እንዲያሰራጭ ይጠይቁ።",
     "dayNotClosedTitle": "የዛሬ ሽያጭ ገና አልተዘጋም",
     "dayNotClosedDesc": "ዛሬ {{count}} ትዕዛዝ(ዞች) — ገንዘብ ለማስረከብ ቀኑን ይዝጉ።"
+  },
+  "branchReport": {
+    "title": "የቅርንጫፍ ሪፖርት",
+    "subtitle": "ከስራ አስኪያጁ የተቀበለው ዕለታዊ ክምችት እና ቅርንጫፉ የሸጠው",
+    "received": "የተቀበለ",
+    "sold": "የተሸጠ",
+    "remaining": "የቀረ",
+    "totalReceived": "ጠቅላላ የተቀበለ",
+    "totalSold": "ጠቅላላ የተሸጠ"
   }
 }

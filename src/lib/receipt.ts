@@ -10,7 +10,46 @@ interface ShopInfo {
   phone?: string
 }
 
-export function printReceipt(sale: Sale, shop: ShopInfo, lang: 'en' | 'am') {
+/**
+ * Sends the built receipt to the printer without a download step: `autoPrint`
+ * marks the PDF to print on open, and a hidden iframe loads it so no popup
+ * (which browsers block) is needed. Falls back to downloading if the frame
+ * cannot be printed.
+ */
+function sendToPrinter(doc: jsPDF, filename: string) {
+  try {
+    doc.autoPrint()
+    const url = doc.output('bloburl') as unknown as string
+    const frame = document.createElement('iframe')
+    frame.style.position = 'fixed'
+    frame.style.right = '0'
+    frame.style.bottom = '0'
+    frame.style.width = '0'
+    frame.style.height = '0'
+    frame.style.border = '0'
+    frame.src = url
+    frame.onload = () => {
+      try {
+        frame.contentWindow?.focus()
+        frame.contentWindow?.print()
+      } catch {
+        doc.save(filename)
+      }
+      // Keep the frame alive long enough for the print dialog to read it.
+      window.setTimeout(() => frame.remove(), 60_000)
+    }
+    document.body.appendChild(frame)
+  } catch {
+    doc.save(filename)
+  }
+}
+
+export function printReceipt(
+  sale: Sale,
+  shop: ShopInfo,
+  lang: 'en' | 'am',
+  mode: 'print' | 'download' = 'print'
+) {
   const doc = new jsPDF({ unit: 'mm', format: [80, 200] })
   const font = lang === 'am' ? 'Noto Sans Ethiopic' : 'Helvetica'
   const name = lang === 'am' ? shop.name_am : shop.name
@@ -134,8 +173,14 @@ export function printReceipt(sale: Sale, shop: ShopInfo, lang: 'en' | 'am') {
   y += 4
   doc.text('🌾 Hussen Bakery 🌾', pageWidth / 2, y, { align: 'center' })
 
-  doc.autoPrint()
-  window.open(doc.output('bloburl'))
+  const filename = `receipt-${sale.id?.slice(0, 8) || 'sale'}.pdf`
+  if (mode === 'download') {
+    doc.save(filename)
+    return
+  }
+  // Previously this used window.open(), which browsers popup-block — so the
+  // receipt silently never printed.
+  sendToPrinter(doc, filename)
 }
 
 export function downloadReceiptPDF(sale: Sale, shop: ShopInfo, lang: 'en' | 'am') {

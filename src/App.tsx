@@ -17,6 +17,7 @@ import Reports from '@/pages/Reports'
 import StaffReport from '@/pages/StaffReport'
 import Users from '@/pages/Users'
 import Branches from '@/pages/Branches'
+import BranchReport from '@/pages/BranchReport'
 import Distribution from '@/pages/Distribution'
 import CashClose from '@/pages/CashClose'
 import Settings from '@/pages/Settings'
@@ -78,6 +79,9 @@ function AppRoutes() {
         } />
         <Route path="/cash-close" element={
           <ProtectedRoute allowedRoles={['owner', 'manager', 'cashier']}><CashClose /></ProtectedRoute>
+        } />
+        <Route path="/branch-report" element={
+          <ProtectedRoute allowedRoles={['owner', 'manager']}><BranchReport /></ProtectedRoute>
         } />
         <Route path="/branches" element={
           <ProtectedRoute allowedRoles={['owner']}><Branches /></ProtectedRoute>

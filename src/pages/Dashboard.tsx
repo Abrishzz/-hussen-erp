@@ -6,10 +6,13 @@ import { Input } from '@/components/ui/input'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { useNavigate } from 'react-router-dom'
 import {
-  useTodaySales, useRawMaterials, useProductionBatches, useSales, useUsers,
+  useTodaySales, useRawMaterials, useProductionBatches, useSales, useUsers, useActiveBranches,
 } from '@/hooks/useData'
 import { formatCurrency } from '@/lib/utils'
-import { filterSalesByRange, salesByDay, paymentBreakdown } from '@/lib/analytics'
+import { filterSalesByRange, salesByDay, paymentBreakdown, branchPerformance } from '@/lib/analytics'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { StaffPerformanceView } from '@/features/reports/StaffPerformanceView'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -31,6 +34,7 @@ export default function Dashboard() {
   const { data: batches } = useProductionBatches()
   const { data: allSales } = useSales()
   const { data: users } = useUsers()
+  const { data: branches } = useActiveBranches()
 
   const today = new Date().toISOString().split('T')[0]
   const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
@@ -54,6 +58,9 @@ export default function Dashboard() {
   const rangeAvg = rangeOrders ? Math.round(rangeRevenue / rangeOrders) : 0
   const dayData = salesByDay(rangedSales).map((d) => ({ date: d.date.slice(5), total: d.total / 100 }))
   const payData = paymentBreakdown(rangedSales).map((p) => ({ name: p.method, value: p.total / 100 }))
+
+  // Today's takings split per branch — generated from the sales themselves.
+  const todayByBranch = branchPerformance(sales || [], branches, t('branches.unassigned'))
 
   return (
     <ErrorBoundary>
@@ -105,6 +112,49 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* ─── Today's sales, per branch ─── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t('dashboard.salesByBranch')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {todayByBranch.length === 0 ? (
+              <p className="py-8 text-center text-muted-foreground">{t('reports.noData')}</p>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('branches.branch')}</TableHead>
+                      <TableHead className="text-right">{t('pos.orderCount')}</TableHead>
+                      <TableHead className="text-right">{t('staffReport.itemsSold')}</TableHead>
+                      <TableHead className="text-right">{t('dashboard.todaySales')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {todayByBranch.map((b) => (
+                      <TableRow key={b.branchId}>
+                        <TableCell className="font-medium">{b.name}</TableCell>
+                        <TableCell className="text-right">{b.orders}</TableCell>
+                        <TableCell className="text-right">{b.itemsSold}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(b.revenue)}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="bg-muted/40">
+                      <TableCell className="font-bold">{t('common.total')}</TableCell>
+                      <TableCell className="text-right font-bold">{todaySalesCount}</TableCell>
+                      <TableCell className="text-right font-bold">
+                        {todayByBranch.reduce((n, b) => n + b.itemsSold, 0)}
+                      </TableCell>
+                      <TableCell className="text-right font-bold">{formatCurrency(todaySalesTotal)}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* ─── Sales Analysis (date-filtered) ─── */}
         <Card>

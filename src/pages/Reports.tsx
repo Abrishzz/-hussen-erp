@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   useSales, useRawMaterials, useProductionBatches,
-  useExpenses, useUsers,
+  useExpenses, useUsers, useActiveBranches,
 } from '@/hooks/useData'
 import { StaffPerformanceView } from '@/features/reports/StaffPerformanceView'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
@@ -11,7 +11,10 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Download } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { staffPerformance } from '@/lib/analytics'
+import { staffPerformance, filterSalesByRange, toDate } from '@/lib/analytics'
+import { downloadSpreadsheet } from '@/lib/excel'
+import { FileSpreadsheet } from 'lucide-react'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart as RePieChart, Pie, Cell, LineChart, Line, CartesianGrid,
@@ -75,12 +78,14 @@ function ReportsContent() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
   const [from, setFrom] = useState(thirtyDaysAgo)
   const [to, setTo] = useState(today)
+  const [staffDay, setStaffDay] = useState(today)
 
   const { data: sales } = useSales()
   const { data: materials } = useRawMaterials()
   const { data: batches } = useProductionBatches()
   const { data: expenses } = useExpenses()
   const { data: users } = useUsers()
+  const { data: branches } = useActiveBranches()
 
   const filteredSales = sales?.filter((s) => {
     const d = s.timestamp?.toDate?.() || new Date(s.timestamp as unknown as string)
@@ -123,8 +128,43 @@ function ReportsContent() {
   const staffRows = staffPerformance(filteredSales, users)
   const noData = <p className="py-10 text-center text-muted-foreground">{t('reports.noData')}</p>
 
+  // Per-staff sales for a single chosen day (defaults to today), independent of
+  // the page's range filter so "who sold what today" is one glance away.
+  const staffDailyRows = staffPerformance(filterSalesByRange(sales, staffDay, staffDay), users)
+
+  // Every sale in the range, flattened one row per line item — the spreadsheet
+  // view, and the same shape that gets exported.
+  const staffName = (id: string) =>
+    users?.find((u) => u.id === id)?.displayName || `#${id.slice(0, 6)}`
+  const branchName = (id?: string) =>
+    !id ? '—' : branches?.find((b) => b.id === id)?.name || `#${id.slice(0, 6)}`
+
+  const activityHeaders = [
+    t('common.date'), t('common.time'), t('branches.branch'), t('staffReport.staff'),
+    t('production.product'), t('common.quantity'), t('common.price'), t('common.total'), t('pos.payment'),
+  ]
+  const activityRows = filteredSales
+    .slice()
+    .sort((a, b) => toDate(b.timestamp).getTime() - toDate(a.timestamp).getTime())
+    .flatMap((s) => {
+      const d = toDate(s.timestamp)
+      return s.items.map((i) => [
+        d.toLocaleDateString('en-GB'),
+        d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        branchName(s.branchId),
+        staffName(s.cashierId),
+        i.name_en,
+        i.quantity,
+        (i.unitPrice / 100).toFixed(2),
+        (i.total / 100).toFixed(2),
+        s.paymentMethod,
+      ])
+    })
+
   const sections = [
     { id: 'sales', label: t('reports.salesReport') },
+    { id: 'activity', label: t('reports.activitySheet') },
+    { id: 'staffDaily', label: t('reports.staffDaily') },
     { id: 'staff', label: t('staffReport.performance') },
     { id: 'bestsellers', label: t('reports.bestSellers') },
     { id: 'inventory', label: t('reports.inventoryReport') },
@@ -179,6 +219,85 @@ function ReportsContent() {
             </BarChart>
           </ResponsiveContainer>
         ) : noData}
+      </Section>
+
+      {/* ─── Activity sheet: every sale in the range, spreadsheet-style ─── */}
+      <Section id="activity" title={t('reports.activitySheet')}
+        action={activityRows.length > 0
+          ? <Button size="sm" variant="outline" className="w-full sm:w-auto"
+              onClick={() => downloadSpreadsheet(`activity-${from}_${to}`, activityHeaders, activityRows)}>
+              <FileSpreadsheet className="mr-1 h-4 w-4" /> {t('reports.excel')}
+            </Button>
+          : undefined}>
+        {activityRows.length === 0 ? noData : (
+          <div className="max-h-[28rem] overflow-auto rounded-md border">
+            <Table>
+              <TableHeader className="sticky top-0 bg-muted">
+                <TableRow>
+                  {activityHeaders.map((h) => (
+                    <TableHead key={h} className="whitespace-nowrap">{h}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {activityRows.map((r, i) => (
+                  <TableRow key={i}>
+                    {r.map((c, j) => (
+                      <TableCell key={j} className={'whitespace-nowrap ' + (j >= 4 ? 'text-right tabular-nums' : '')}>
+                        {c}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Section>
+
+      {/* ─── Each staff member's sales for one chosen day ─── */}
+      <Section id="staffDaily" title={t('reports.staffDaily')}
+        action={
+          <div className="flex items-center gap-2">
+            <Input type="date" value={staffDay} onChange={(e) => setStaffDay(e.target.value)} className="h-9 w-40" />
+            <Button size="sm" variant="outline" disabled={staffDailyRows.length === 0}
+              onClick={() => downloadSpreadsheet(
+                `staff-daily-${staffDay}`,
+                [t('staffReport.staff'), t('pos.orderCount'), t('staffReport.itemsSold'), t('finance.revenue'), t('staffReport.avgOrder')],
+                staffDailyRows.map((r) => [r.name, r.orders, r.itemsSold, (r.revenue / 100).toFixed(2), (r.avgOrder / 100).toFixed(2)])
+              )}>
+              <FileSpreadsheet className="mr-1 h-4 w-4" /> {t('reports.excel')}
+            </Button>
+          </div>
+        }>
+        {staffDailyRows.length === 0 ? noData : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('staffReport.staff')}</TableHead>
+                  <TableHead className="text-right">{t('pos.orderCount')}</TableHead>
+                  <TableHead className="text-right">{t('staffReport.itemsSold')}</TableHead>
+                  <TableHead className="text-right">{t('finance.revenue')}</TableHead>
+                  <TableHead className="text-right">{t('staffReport.avgOrder')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {staffDailyRows.map((r, i) => (
+                  <TableRow key={r.staffId}>
+                    <TableCell className="font-medium">
+                      {i === 0 && <span className="mr-1">🏆</span>}{r.name}
+                    </TableCell>
+                    <TableCell className="text-right">{r.orders}</TableCell>
+                    <TableCell className="text-right">{r.itemsSold}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(r.revenue)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(r.avgOrder)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </Section>
 
       {/* ─── Staff performance ─── */}

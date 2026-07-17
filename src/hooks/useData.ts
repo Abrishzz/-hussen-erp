@@ -7,6 +7,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  setDoc,
   increment,
   writeBatch,
   query,
@@ -451,6 +452,20 @@ export function useConfirmBatch() {
       qc.invalidateQueries({ queryKey: ['warehouseStock'] })
       qc.invalidateQueries({ queryKey: ['productionBatches'] })
     },
+  })
+}
+
+/** Sets a product's central warehouse quantity outright (used by the product form). */
+export function useSetWarehouseQty() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { productId: string; name_en: string; name_am: string; qty: number }) =>
+      setDoc(
+        doc(db, 'warehouseStock', args.productId),
+        { productId: args.productId, name_en: args.name_en, name_am: args.name_am, qty: args.qty },
+        { merge: true }
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['warehouseStock'] }),
   })
 }
 

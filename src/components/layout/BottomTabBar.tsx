@@ -51,6 +51,7 @@ const tabItems: TabItem[] = [
   { label: 'nav.hr', path: '/hr', icon: Users, roles: ['owner'] },
   { label: 'nav.reports', path: '/reports', icon: BarChart3, roles: ['owner', 'manager'] },
   { label: 'nav.staffReport', path: '/staff-report', icon: TrendingUp, roles: ['owner', 'manager'] },
+  { label: 'nav.branchReport', path: '/branch-report', icon: Building2, roles: ['owner', 'manager'] },
   { label: 'nav.branches', path: '/branches', icon: Building2, roles: ['owner'] },
   { label: 'nav.users', path: '/users', icon: UserCog, roles: ['owner'] },
   { label: 'nav.settings', path: '/settings', icon: Settings, roles: ['owner'] },

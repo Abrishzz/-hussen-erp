@@ -13,7 +13,9 @@ import { useState } from 'react'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Banknote, AlertTriangle, CheckCircle2, Lock } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { downloadSpreadsheet } from '@/lib/excel'
+import { Banknote, AlertTriangle, CheckCircle2, Lock, Download } from 'lucide-react'
 import type { Sale } from '@/types'
 
 const emptyPay = { cash: 0, telebirr: 0, bank: 0 }
@@ -163,11 +165,31 @@ function ManagerConfirm() {
   const { t } = useTranslation()
   const { show } = useToast()
   const { data: closes, isLoading } = useCashCloses()
+  const { data: branches } = useActiveBranches()
+  const { data: sales } = useSales()
   const confirm = useConfirmCashClose()
   const [busy, setBusy] = useState<string | null>(null)
+  const today = new Date().toISOString().split('T')[0]
+  const [day, setDay] = useState(today)
 
   const submitted = (closes || []).filter((c) => c.status === 'submitted')
   const confirmed = (closes || []).filter((c) => c.status === 'confirmed')
+
+  // Every branch's takings for the chosen day, computed from the sales
+  // themselves — so a branch shows up here whether or not it has closed yet.
+  const daySales = filterSalesByRange(sales, day, day).filter((s) => s.status !== 'voided')
+  const perBranch = (branches || []).map((b) => {
+    const mine = daySales.filter((s) => s.branchId === b.id)
+    const close = (closes || []).find((c) => c.branchId === b.id && c.date === day)
+    return {
+      branch: b,
+      orders: mine.length,
+      revenue: mine.reduce((s, x) => s + x.total, 0),
+      byPayment: paymentSplit(mine),
+      close,
+    }
+  })
+  const dayTotal = perBranch.reduce((s, r) => s + r.revenue, 0)
 
   const handleConfirm = async (id: string) => {
     setBusy(id)
@@ -209,6 +231,69 @@ function ManagerConfirm() {
         </h1>
         <p className="text-muted-foreground">{t('cashClose.managerSubtitle')}</p>
       </div>
+
+      {/* Per-branch position for the day, generated from sales */}
+      <Card>
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-base sm:text-lg">{t('cashClose.byBranch')}</CardTitle>
+          <div className="flex items-center gap-2">
+            <Input type="date" value={day} max={today} onChange={(e) => setDay(e.target.value)} className="h-9 w-40" />
+            <Button size="sm" variant="outline" disabled={perBranch.length === 0}
+              onClick={() => downloadSpreadsheet(
+                `cash-close-${day}`,
+                [t('branches.branch'), t('pos.orderCount'), t('pos.cash'), t('pos.telebirr'), t('pos.bankTransfer'), t('common.total'), t('common.status')],
+                perBranch.map((r) => [
+                  r.branch.name, r.orders,
+                  (r.byPayment.cash / 100).toFixed(2),
+                  (r.byPayment.telebirr / 100).toFixed(2),
+                  (r.byPayment.bank / 100).toFixed(2),
+                  (r.revenue / 100).toFixed(2),
+                  r.close ? t(`cashClose.status.${r.close.status}`) : t('cashClose.notClosed'),
+                ])
+              )}>
+              <Download className="mr-1 h-4 w-4" /> {t('reports.excel')}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('branches.branch')}</TableHead>
+                  <TableHead className="text-right">{t('pos.orderCount')}</TableHead>
+                  <TableHead className="text-right">{t('common.total')}</TableHead>
+                  <TableHead className="text-right">{t('common.status')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {perBranch.map((r) => (
+                  <TableRow key={r.branch.id}>
+                    <TableCell className="font-medium">{r.branch.name}</TableCell>
+                    <TableCell className="text-right">{r.orders}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(r.revenue)}</TableCell>
+                    <TableCell className="text-right">
+                      {r.close ? (
+                        <Badge variant={r.close.status === 'confirmed' ? 'success' : 'secondary'}>
+                          {t(`cashClose.status.${r.close.status}`)}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">{t('cashClose.notClosed')}</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="bg-muted/40">
+                  <TableCell className="font-bold">{t('common.total')}</TableCell>
+                  <TableCell className="text-right font-bold">{perBranch.reduce((n, r) => n + r.orders, 0)}</TableCell>
+                  <TableCell className="text-right font-bold">{formatCurrency(dayTotal)}</TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>{t('cashClose.awaitingConfirmation')} ({submitted.length})</CardTitle></CardHeader>

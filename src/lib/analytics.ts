@@ -79,6 +79,47 @@ export function salesByDay(sales: Sale[]): { date: string; total: number; orders
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
+export interface BranchPerformanceRow {
+  branchId: string
+  name: string
+  orders: number
+  revenue: number
+  itemsSold: number
+}
+
+/**
+ * Aggregates sales per branch. Sales made by users with no branch (owner/manager
+ * selling centrally) collect under an "unassigned" row rather than vanishing.
+ */
+export function branchPerformance(
+  sales: Sale[],
+  branches: { id: string; name: string }[] | undefined,
+  unassignedLabel = 'Unassigned'
+): BranchPerformanceRow[] {
+  const nameById = new Map<string, string>()
+  branches?.forEach((b) => nameById.set(b.id, b.name))
+
+  const byBranch: Record<string, BranchPerformanceRow> = {}
+  sales.forEach((s) => {
+    const id = s.branchId || 'unassigned'
+    if (!byBranch[id]) {
+      byBranch[id] = {
+        branchId: id,
+        name: id === 'unassigned' ? unassignedLabel : nameById.get(id) || `#${id.slice(0, 6)}`,
+        orders: 0,
+        revenue: 0,
+        itemsSold: 0,
+      }
+    }
+    const row = byBranch[id]
+    row.orders += 1
+    row.revenue += s.total
+    row.itemsSold += s.items.reduce((n, it) => n + it.quantity, 0)
+  })
+
+  return Object.values(byBranch).sort((a, b) => b.revenue - a.revenue)
+}
+
 /** Revenue split by payment method. Values in cents. */
 export function paymentBreakdown(sales: Sale[]): { method: string; total: number }[] {
   const map: Record<string, number> = {}
