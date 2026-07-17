@@ -8,6 +8,8 @@ interface ShopInfo {
   name_am: string
   address?: string
   phone?: string
+  telebirrNumber?: string
+  bankAccount?: string
 }
 
 /**
@@ -154,6 +156,15 @@ export function printReceipt(
   const payLabel = lang === 'am' ? 'የክፍያ ዘዴ' : 'Payment'
   doc.text(`${payLabel}: ${sale.paymentMethod}`, 5, y)
   y += 4
+
+  if (sale.paymentMethod === 'telebirr' && shop.telebirrNumber) {
+    doc.text(`Telebirr: ${shop.telebirrNumber}`, 5, y)
+    y += 4
+  }
+  if (sale.paymentMethod === 'bank' && shop.bankAccount) {
+    doc.text(`Bank: ${shop.bankAccount}`, 5, y)
+    y += 4
+  }
 
   if (sale.paymentMethod === 'cash' && sale.cashReceived) {
     const cashLabel = lang === 'am' ? 'የተቀበለው' : 'Cash'

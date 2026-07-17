@@ -83,7 +83,8 @@
     "trend": "አዝማሚያ",
     "breakdown": "ክፍፍል",
     "preferences": "ምርጫዎች",
-    "image": "ምስል"
+    "image": "ምስል",
+    "copy": "ቅዳ"
   },
   "auth": {
     "login": "ግባ",
@@ -147,6 +148,7 @@
     "telebirr": "ተሌብር",
     "bankTransfer": "የባንክ ዝውውር",
     "cashReceived": "የተቀበለው ገንዘብ",
+    "sendTo": "ክፍያ ይላኩበት",
     "changeDue": "የሚመለሰው ገንዘብ",
     "customerName": "የደንበኛ ስም (አማራጭ)",
     "orderDiscount": "የትዕዛዝ ቅናሽ",
@@ -321,7 +323,10 @@
     "darkMode": "ጨለማ ሁነታ",
     "currency": "ገንዘብ",
     "notifications": "ማሳወቂያዎች",
-    "lowStockThreshold": "ዝቅተኛ ክምችት ገደብ"
+    "lowStockThreshold": "ዝቅተኛ ክምችት ገደብ",
+    "paymentAccounts": "የክፍያ መለያዎች",
+    "telebirrNumber": "የተሌብር ቁጥር",
+    "bankAccount": "የባንክ ሂሳብ"
   },
   "dashboard": {
     "title": "ዳሽቦርድ",

@@ -5,7 +5,7 @@ import type { Sale } from '@/types'
 
 interface Props {
   sale: Sale | null
-  shop: { name: string; name_am: string; address?: string; phone?: string }
+  shop: { name: string; name_am: string; address?: string; phone?: string; telebirrNumber?: string; bankAccount?: string }
   lang: 'en' | 'am'
   branchName?: string
 }
@@ -95,6 +95,12 @@ export function PrintableReceipt({ sale, shop, lang, branchName }: Props) {
           <div className="pr-row"><span>{L.cash}</span><span>{formatCurrency(sale.cashReceived)}</span></div>
           <div className="pr-row"><span>{L.change}</span><span>{formatCurrency(sale.changeDue || 0)}</span></div>
         </>
+      )}
+      {sale.paymentMethod === 'telebirr' && shop.telebirrNumber && (
+        <div className="pr-row"><span>{am ? 'ተሌብር' : 'Telebirr'}</span><span>{shop.telebirrNumber}</span></div>
+      )}
+      {sale.paymentMethod === 'bank' && shop.bankAccount && (
+        <div className="pr-row"><span>{am ? 'ባንክ' : 'Bank'}</span><span>{shop.bankAccount}</span></div>
       )}
 
       <div className="pr-rule" />

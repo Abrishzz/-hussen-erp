@@ -16,6 +16,8 @@ const defaultSettings: AppSettings = {
   defaultLanguage: 'en',
   darkMode: false,
   currency: 'ETB',
+  telebirrNumber: '',
+  bankAccount: '',
 }
 
 export const useSettingsStore = create<SettingsState>()(

@@ -83,7 +83,8 @@
     "trend": "Trend",
     "breakdown": "Breakdown",
     "preferences": "Preferences",
-    "image": "Image"
+    "image": "Image",
+    "copy": "Copy"
   },
   "auth": {
     "login": "Login",
@@ -147,6 +148,7 @@
     "telebirr": "Telebirr",
     "bankTransfer": "Bank Transfer",
     "cashReceived": "Cash Received",
+    "sendTo": "Send payment to",
     "changeDue": "Change Due",
     "customerName": "Customer Name (optional)",
     "orderDiscount": "Order Discount",
@@ -321,7 +323,10 @@
     "darkMode": "Dark Mode",
     "currency": "Currency",
     "notifications": "Notifications",
-    "lowStockThreshold": "Low Stock Threshold"
+    "lowStockThreshold": "Low Stock Threshold",
+    "paymentAccounts": "Payment Accounts",
+    "telebirrNumber": "Telebirr Number",
+    "bankAccount": "Bank Account"
   },
   "dashboard": {
     "title": "Dashboard",

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { posStore } from '@/lib/posStore'
 import { useAddSale, useDeductBranchStock } from '@/hooks/useData'
 import { useAuthStore } from '@/store/authStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { now } from '@/lib/timestamp'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { cn, formatCurrency } from '@/lib/utils'
-import { Banknote, Smartphone, Building2, Check } from 'lucide-react'
+import { Banknote, Smartphone, Building2, Check, Copy } from 'lucide-react'
 import type { SaleItem, Sale } from '@/types'
 
 type Method = 'cash' | 'telebirr' | 'bank'
@@ -37,6 +38,7 @@ interface CheckoutDialogProps {
 export function CheckoutDialog({ open, onOpenChange, branchId, onCompleted }: CheckoutDialogProps) {
   const { t } = useTranslation()
   const { user } = useAuthStore()
+  const { settings } = useSettingsStore()
   const addSale = useAddSale()
   const deductBranchStock = useDeductBranchStock()
   const [customerName, setCustomerName] = useState('')
@@ -192,6 +194,40 @@ export function CheckoutDialog({ open, onOpenChange, branchId, onCompleted }: Ch
                   <span className="text-2xl font-bold leading-none tabular-nums">{formatCurrency(changeDue)}</span>
                 </div>
               )}
+            </div>
+          )}
+
+          {paymentMethod === 'telebirr' && settings.telebirrNumber && (
+            <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+              <Label className="text-sm font-semibold">{t('pos.sendTo')}</Label>
+              <div className="flex items-center justify-between rounded-xl bg-background px-3 py-2.5 text-sm font-mono">
+                <span>{settings.telebirrNumber}</span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(settings.telebirrNumber || '')}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {t('common.copy')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {paymentMethod === 'bank' && settings.bankAccount && (
+            <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+              <Label className="text-sm font-semibold">{t('pos.sendTo')}</Label>
+              <div className="flex items-center justify-between rounded-xl bg-background px-3 py-2.5 text-sm font-mono">
+                <span>{settings.bankAccount}</span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(settings.bankAccount || '')}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {t('common.copy')}
+                </button>
+              </div>
             </div>
           )}
 

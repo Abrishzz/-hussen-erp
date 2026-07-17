@@ -10,7 +10,8 @@ import { useAuthStore } from '@/store/authStore'
 export default function Settings() {
   const { t, i18n } = useTranslation()
   const { settings, updateSettings } = useSettingsStore()
-  const { user } = useAuthStore()
+  const { role, user } = useAuthStore()
+  const isOwner = role === 'owner'
 
   return (
     <div className="space-y-6">
@@ -67,6 +68,32 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        {isOwner && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('settings.paymentAccounts')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t('settings.telebirrNumber')}</Label>
+                <Input
+                  value={settings.telebirrNumber || ''}
+                  onChange={(e) => updateSettings({ telebirrNumber: e.target.value })}
+                  placeholder="+2519XXXXXXXX"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('settings.bankAccount')}</Label>
+                <Input
+                  value={settings.bankAccount || ''}
+                  onChange={(e) => updateSettings({ bankAccount: e.target.value })}
+                  placeholder="Bank name - Account number"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

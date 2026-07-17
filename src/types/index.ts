@@ -265,4 +265,6 @@ export interface AppSettings {
   defaultLanguage: 'en' | 'am'
   darkMode: boolean
   currency: string
+  telebirrNumber?: string
+  bankAccount?: string
 }
