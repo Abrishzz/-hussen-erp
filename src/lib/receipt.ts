@@ -76,7 +76,7 @@ export function printReceipt(
 
   // Separator
   doc.setFontSize(10)
-  doc.text('━'.repeat(20), pageWidth / 2, y, { align: 'center' })
+  doc.text('-'.repeat(32), pageWidth / 2, y, { align: 'center' })
   y += 6
 
   doc.setFontSize(8)
@@ -95,7 +95,7 @@ export function printReceipt(
 
   // Separator
   doc.setFontSize(10)
-  doc.text('━'.repeat(20), pageWidth / 2, y, { align: 'center' })
+  doc.text('-'.repeat(32), pageWidth / 2, y, { align: 'center' })
   y += 5
 
   // Items header
@@ -107,7 +107,7 @@ export function printReceipt(
   y += 4
 
   doc.setFontSize(10)
-  doc.text('━'.repeat(20), pageWidth / 2, y, { align: 'center' })
+  doc.text('-'.repeat(32), pageWidth / 2, y, { align: 'center' })
   y += 4
 
   // Items
@@ -123,7 +123,7 @@ export function printReceipt(
 
   y += 2
   doc.setFontSize(10)
-  doc.text('━'.repeat(20), pageWidth / 2, y, { align: 'center' })
+  doc.text('-'.repeat(32), pageWidth / 2, y, { align: 'center' })
   y += 5
 
   // Totals
@@ -178,7 +178,7 @@ export function printReceipt(
   doc.text(thanks, pageWidth / 2, y, { align: 'center' })
   y += 4
   const bakeryName = lang === 'am' ? 'ናፍሲ ቤከሪ' : 'Nafsi Bakery'
-  doc.text(`🌾 ${bakeryName} 🌾`, pageWidth / 2, y, { align: 'center' })
+  doc.text(`** ${bakeryName} **`, pageWidth / 2, y, { align: 'center' })
 
   const filename = `receipt-${sale.id?.slice(0, 8) || 'sale'}.pdf`
   if (mode === 'download') {
@@ -212,7 +212,7 @@ export function downloadReceiptPDF(sale: Sale, _shop: ShopInfo, lang: 'en' | 'am
   y += 6
 
   doc.setFontSize(10)
-  doc.text('━'.repeat(20), pageWidth / 2, y, { align: 'center' })
+  doc.text('-'.repeat(32), pageWidth / 2, y, { align: 'center' })
   y += 5
 
   doc.setFontSize(8)
@@ -224,7 +224,7 @@ export function downloadReceiptPDF(sale: Sale, _shop: ShopInfo, lang: 'en' | 'am
   })
 
   y += 2
-  doc.text('━'.repeat(20), pageWidth / 2, y, { align: 'center' })
+  doc.text('-'.repeat(32), pageWidth / 2, y, { align: 'center' })
   y += 5
 
   doc.setFontSize(11)

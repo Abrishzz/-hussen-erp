@@ -103,7 +103,7 @@ export function PrintableReceipt({ sale, shop, lang, branchName }: Props) {
 
       <div className="pr-rule" />
       <div className="pr-center pr-thanks">{L.thanks}</div>
-      <div className="pr-center">🌾 {name} 🌾</div>
+      <div className="pr-center">** {name} **</div>
     </div>,
     document.body
   )
