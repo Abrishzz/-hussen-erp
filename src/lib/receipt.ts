@@ -54,7 +54,7 @@ export function printReceipt(
 ) {
   const doc = new jsPDF({ unit: 'mm', format: [80, 200] })
   const font = lang === 'am' ? 'Noto Sans Ethiopic' : 'Helvetica'
-  const name = lang === 'am' ? shop.name_am : shop.name
+  const name = lang === 'am' ? 'ናፍሲ ቤከሪ' : 'Nafsi Bakery'
   const pageWidth = 80
   let y = 10
 
@@ -78,11 +78,6 @@ export function printReceipt(
   doc.setFontSize(10)
   doc.text('━'.repeat(20), pageWidth / 2, y, { align: 'center' })
   y += 6
-
-  const headerText = lang === 'am' ? 'የሽያጭ ደረሰኝ' : 'SALES RECEIPT'
-  doc.setFontSize(12)
-  doc.text(headerText, pageWidth / 2, y, { align: 'center' })
-  y += 7
 
   doc.setFontSize(8)
   const dateStr = formatDateTime(sale.timestamp)
@@ -182,7 +177,8 @@ export function printReceipt(
   const thanks = lang === 'am' ? 'እንደበረከተ እንመሰክራለን!' : 'Thank you for your purchase!'
   doc.text(thanks, pageWidth / 2, y, { align: 'center' })
   y += 4
-  doc.text('🌾 Hussen Bakery 🌾', pageWidth / 2, y, { align: 'center' })
+  const bakeryName = lang === 'am' ? 'ናፍሲ ቤከሪ' : 'Nafsi Bakery'
+  doc.text(`🌾 ${bakeryName} 🌾`, pageWidth / 2, y, { align: 'center' })
 
   const filename = `receipt-${sale.id?.slice(0, 8) || 'sale'}.pdf`
   if (mode === 'download') {
@@ -194,10 +190,10 @@ export function printReceipt(
   sendToPrinter(doc, filename)
 }
 
-export function downloadReceiptPDF(sale: Sale, shop: ShopInfo, lang: 'en' | 'am') {
+export function downloadReceiptPDF(sale: Sale, _shop: ShopInfo, lang: 'en' | 'am') {
   const doc = new jsPDF({ unit: 'mm', format: [80, 200] })
   const font = lang === 'am' ? 'Noto Sans Ethiopic' : 'Helvetica'
-  const name = lang === 'am' ? shop.name_am : shop.name
+  const name = lang === 'am' ? 'ናፍሲ ቤከሪ' : 'Nafsi Bakery'
   const pageWidth = 80
   let y = 10
 
@@ -207,12 +203,7 @@ export function downloadReceiptPDF(sale: Sale, shop: ShopInfo, lang: 'en' | 'am'
   y += 6
   doc.setFontSize(8)
   doc.text('Bulehora, Ethiopia', pageWidth / 2, y, { align: 'center' })
-  y += 8
-
-  const headerText = lang === 'am' ? 'የሽያጭ ደረሰኝ' : 'SALES RECEIPT'
-  doc.setFontSize(12)
-  doc.text(headerText, pageWidth / 2, y, { align: 'center' })
-  y += 7
+  y += 6
 
   doc.setFontSize(8)
   doc.text(`Date: ${formatDateTime(sale.timestamp)}`, 5, y)

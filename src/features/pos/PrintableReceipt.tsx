@@ -23,11 +23,10 @@ export function PrintableReceipt({ sale, shop, lang, branchName }: Props) {
   if (!sale) return null
 
   const am = lang === 'am'
-  const name = am ? shop.name_am : shop.name
+  const name = am ? 'ናፍሲ ቤከሪ' : 'Nafsi Bakery'
   const itemName = (i: Sale['items'][number]) => (am ? i.name_am : i.name_en)
 
   const L = {
-    receipt: am ? 'ደረሰኝ' : 'RECEIPT',
     item: am ? 'ዕቃ' : 'Item',
     qty: am ? 'ብዛት' : 'Qty',
     price: am ? 'ዋጋ' : 'Price',
@@ -55,7 +54,6 @@ export function PrintableReceipt({ sale, shop, lang, branchName }: Props) {
       </div>
 
       <div className="pr-rule" />
-      <div className="pr-center pr-bold">{L.receipt}</div>
       <div className="pr-row"><span>#{sale.id?.slice(0, 8)}</span><span>{formatDateTime(toDate(sale.timestamp))}</span></div>
       {sale.customerName && <div className="pr-row"><span>{L.customer}</span><span>{sale.customerName}</span></div>}
       <div className="pr-rule" />
