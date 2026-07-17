@@ -42,6 +42,16 @@ const users = [
   { email: 'staff@hussenbakery.com', displayName: 'Baker Staff', role: 'staff' },
 ]
 
+// The 5 branches. Without these the branch workflow cannot run: cashiers have no
+// branch to sell from and the manager has nowhere to distribute stock.
+const branches = [
+  { name: 'Bulehora Main', name_am: 'ቡለ ሆራ ዋና', location: 'Bulehora Town Center', phone: '+251913000001' },
+  { name: 'Yabelo Road', name_am: 'ያቤሎ መንገድ', location: 'Yabelo Road', phone: '+251913000002' },
+  { name: 'Market Square', name_am: 'ገበያ አደባባይ', location: 'Central Market', phone: '+251913000003' },
+  { name: 'University Gate', name_am: 'ዩኒቨርሲቲ በር', location: 'Near BHU', phone: '+251913000004' },
+  { name: 'Bus Station', name_am: 'አውቶቡስ ጣቢያ', location: 'Main Bus Station', phone: '+251913000005' },
+]
+
 // Prices / costs stored in cents (santim).
 const products = [
   { name_en: 'White Bread', name_am: 'ነጭ ዳቦ', price: 2500, category: 'Bread' },
@@ -94,6 +104,39 @@ async function seedUsers() {
   }
 }
 
+/** Creates the branches if none exist, and returns every branch id keyed by name. */
+async function seedBranches() {
+  const snap = await db.collection('branches').get()
+  if (!snap.empty) {
+    console.log('  branches: already has data, skipping')
+    return Object.fromEntries(snap.docs.map((d) => [d.data().name, d.id]))
+  }
+  const ids = {}
+  for (const b of branches) {
+    const ref = await db.collection('branches').add({ ...b, isActive: true, createdAt: Timestamp.now() })
+    ids[b.name] = ref.id
+  }
+  console.log(`  branches: ${branches.length} docs`)
+  return ids
+}
+
+/** Points a cashier at a branch (only if they aren't already assigned). */
+async function assignCashierToBranch(email, branchId) {
+  if (!branchId) return
+  try {
+    const u = await auth.getUserByEmail(email)
+    const doc = await db.collection('users').doc(u.uid).get()
+    if (doc.exists && doc.data().branchId) {
+      console.log(`  ${email}: already assigned to a branch, skipping`)
+      return
+    }
+    await db.collection('users').doc(u.uid).set({ branchId }, { merge: true })
+    console.log(`  ${email}: assigned to branch`)
+  } catch {
+    console.log(`  ${email}: not found, skipped branch assignment`)
+  }
+}
+
 async function seedIfEmpty(name, docs, transform = (d) => d) {
   const snap = await db.collection(name).limit(1).get()
   if (!snap.empty) {
@@ -111,6 +154,9 @@ async function main() {
   console.log('Users:')
   await seedUsers()
   console.log('Catalog:')
+  const branchIds = await seedBranches()
+  await assignCashierToBranch('cashier@hussenbakery.com', branchIds['Bulehora Main'])
+
   await seedIfEmpty('products', products, (p) => ({ ...p, imageUrl: '', isActive: true, createdAt: Timestamp.now() }))
   await seedIfEmpty('rawMaterials', rawMaterials, (m) => ({ ...m, isActive: true }))
   await seedIfEmpty('suppliers', suppliers)

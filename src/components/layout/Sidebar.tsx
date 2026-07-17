@@ -59,13 +59,14 @@ export function Sidebar() {
   const filteredItems = navItems.filter((item) => role && item.roles.includes(role))
 
   return (
-    <aside className="hidden lg:flex h-screen w-64 flex-col border-r bg-card">
-      <div className="flex items-center gap-2 border-b px-6 py-4">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r bg-card lg:flex">
+      <div className="flex shrink-0 items-center gap-2 border-b px-6 py-4">
         <Store className="h-6 w-6 text-primary" />
         <span className="text-lg font-bold">{t('app.name')}</span>
       </div>
 
-      <nav className="flex-1 space-y-1 p-4">
+      {/* Only the link list scrolls, so the brand header and Logout stay pinned. */}
+      <nav className="flex-1 space-y-1 overflow-y-auto p-4">
         {filteredItems.map((item) => (
           <Link
             key={item.path}

@@ -30,9 +30,14 @@ export { where, orderBy, limit, Timestamp }
 export type { QueryConstraint }
 
 // Generic hooks
-export function useCollection<T>(collectionName: string, constraints: QueryConstraint[] = []) {
+export function useCollection<T>(
+  collectionName: string,
+  constraints: QueryConstraint[] = [],
+  options: { enabled?: boolean } = {}
+) {
   return useQuery<T[]>({
     queryKey: [collectionName, ...constraints.map((c) => c.toString())],
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const q = query(collection(db, collectionName), ...constraints)
       const snap = await getDocs(q)
@@ -127,8 +132,8 @@ export function useDeleteProduct() {
 }
 
 // ─── Sales ───
-export function useSales(constraints: QueryConstraint[] = []) {
-  return useCollection<Sale>('sales', constraints)
+export function useSales(constraints: QueryConstraint[] = [], options: { enabled?: boolean } = {}) {
+  return useCollection<Sale>('sales', constraints, options)
 }
 
 export function useTodaySales() {
@@ -150,8 +155,8 @@ export function useAddSale() {
 }
 
 // ─── Raw Materials ───
-export function useRawMaterials() {
-  return useCollection<RawMaterial>('rawMaterials', [where('isActive', '==', true)])
+export function useRawMaterials(options: { enabled?: boolean } = {}) {
+  return useCollection<RawMaterial>('rawMaterials', [where('isActive', '==', true)], options)
 }
 
 export function useAddMaterial() {
@@ -260,8 +265,8 @@ export function useDeleteRecipe() {
 }
 
 // ─── Production Batches ───
-export function useProductionBatches() {
-  return useCollection<ProductionBatch>('productionBatches', [orderBy('date', 'desc')])
+export function useProductionBatches(options: { enabled?: boolean } = {}) {
+  return useCollection<ProductionBatch>('productionBatches', [orderBy('date', 'desc')], options)
 }
 
 export function useAddBatch() {
@@ -450,10 +455,10 @@ export function useConfirmBatch() {
 }
 
 // ─── Branch stock ───
-export function useBranchStock(branchId?: string) {
+export function useBranchStock(branchId?: string, options: { enabled?: boolean } = {}) {
   const constraints: QueryConstraint[] = []
   if (branchId) constraints.push(where('branchId', '==', branchId))
-  return useCollection<BranchStockItem>('branchStock', constraints)
+  return useCollection<BranchStockItem>('branchStock', constraints, options)
 }
 
 // ─── Distributions ───
@@ -525,8 +530,12 @@ export function useDeductBranchStock() {
 }
 
 // ─── Cash closes ───
-export function useCashCloses(constraints: QueryConstraint[] = []) {
-  return useCollection<CashClose>('cashCloses', constraints.length ? constraints : [orderBy('submittedAt', 'desc')])
+export function useCashCloses(constraints: QueryConstraint[] = [], options: { enabled?: boolean } = {}) {
+  return useCollection<CashClose>(
+    'cashCloses',
+    constraints.length ? constraints : [orderBy('submittedAt', 'desc')],
+    options
+  )
 }
 
 /**

@@ -5,14 +5,24 @@ admin.initializeApp()
 
 const db = admin.firestore()
 
-// Auto-deduct raw materials when a production batch is confirmed
+// Auto-deduct raw materials when a production batch is marked completed.
+//
+// Finished goods are NOT credited here: the branch workflow credits
+// `warehouseStock` when the manager confirms the batch, so writing finishedGoods
+// would be a second, unused source of truth.
 export const onProductionBatchConfirmed = functions.firestore
   .document('productionBatches/{batchId}')
   .onWrite(async (change, context) => {
     const { batchId } = context.params
+    const before = change.before?.data()
     const after = change.after?.data()
 
     if (!after || after.status !== 'completed') return null
+
+    // Only act on the *transition* into 'completed'. Every later write to the doc
+    // (notably the manager setting `confirmed: true`) also fires onWrite, and
+    // without this guard the raw materials would be deducted again each time.
+    if (before && before.status === 'completed') return null
 
     const recipeId = after.recipeId
     const recipeSnap = await db.collection('recipes').doc(recipeId).get()
@@ -60,23 +70,6 @@ export const onProductionBatchConfirmed = functions.firestore
       })
     }
 
-    // Update finished goods
-    const finishedGoodRef = db.collection('finishedGoods').doc(recipe.productId)
-    const finishedSnap = await finishedGoodRef.get()
-    if (finishedSnap.exists) {
-      batch.update(finishedGoodRef, {
-        currentStock: admin.firestore.FieldValue.increment(after.actualQty),
-      })
-    } else {
-      batch.set(finishedGoodRef, {
-        productId: recipe.productId,
-        productName_en: recipe.productName_en,
-        productName_am: recipe.productName_am,
-        currentStock: after.actualQty,
-        unit: 'pcs',
-      })
-    }
-
     // Calculate batch cost
     let totalCost = 0
     for (const ingredient of recipe.ingredients) {
@@ -100,25 +93,59 @@ export const onProductionBatchConfirmed = functions.firestore
     return null
   })
 
-// Set custom claims when a user document is created
+// Seed a /users doc for accounts created outside the app (e.g. the Firebase
+// console). The in-app "Create User" flow writes this doc itself with the chosen
+// role, so we must never overwrite an existing one — this trigger races that
+// write, and clobbering it would silently demote a new manager to cashier.
 export const onUserCreated = functions.auth.user().onCreate(async (user) => {
-  const userDoc = await db.collection('users').doc(user.uid).get()
-  const role = userDoc.exists ? (userDoc.data()?.role || 'cashier') : 'cashier'
+  const ref = db.collection('users').doc(user.uid)
+  const existing = await ref.get()
+  if (existing.exists) {
+    functions.logger.info(`User ${user.uid} already has a /users doc; leaving it as-is`)
+    return null
+  }
 
-  await admin.auth().setCustomUserClaims(user.uid, { role })
-  await db.collection('users').doc(user.uid).set(
-    {
-      email: user.email,
-      role,
-      displayName: user.displayName || '',
-      isActive: true,
-      createdAt: admin.firestore.Timestamp.now(),
-    },
-    { merge: true }
-  )
-
-  functions.logger.info(`User ${user.uid} created with role: ${role}`)
+  await ref.set({
+    email: user.email,
+    role: 'cashier',
+    displayName: user.displayName || '',
+    branchId: '',
+    isActive: true,
+    createdAt: admin.firestore.Timestamp.now(),
+  })
+  functions.logger.info(`User ${user.uid} seeded with default role: cashier`)
+  return null
 })
+
+/**
+ * Keeps the `role` custom claim in step with the /users doc, which is the source
+ * of truth the app and security rules read. This also covers an owner changing
+ * someone's role in User Management — otherwise the claim would stay stale
+ * forever, since nothing else ever refreshes it.
+ */
+export const syncUserRoleClaim = functions.firestore
+  .document('users/{userId}')
+  .onWrite(async (change, context) => {
+    const { userId } = context.params
+    const after = change.after?.data()
+    if (!after) return null
+
+    const role = after.role
+    const validRoles = ['owner', 'manager', 'cashier', 'staff']
+    if (!validRoles.includes(role)) {
+      functions.logger.warn(`User ${userId} has unknown role "${role}"; claim not set`)
+      return null
+    }
+    if (change.before?.data()?.role === role) return null // nothing changed
+
+    try {
+      await admin.auth().setCustomUserClaims(userId, { role })
+      functions.logger.info(`Synced claim for ${userId}: role=${role}`)
+    } catch (err) {
+      functions.logger.error(`Could not set claim for ${userId}`, err)
+    }
+    return null
+  })
 
 // Daily low stock alert
 export const checkLowStock = functions.https.onCall(async (_, context) => {

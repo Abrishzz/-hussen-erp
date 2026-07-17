@@ -4,7 +4,8 @@ import { useSettingsStore } from '@/store/settingsStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Languages, Moon, Sun, Search, Bell } from 'lucide-react'
+import { Languages, Moon, Sun, Search } from 'lucide-react'
+import { NotificationBell } from './NotificationBell'
 
 export function Navbar() {
   const { t, i18n } = useTranslation()
@@ -40,10 +41,7 @@ export function Navbar() {
         <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleDarkMode} title={t('settings.darkMode')}>
           {settings.darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
-        <Button variant="ghost" size="icon" className="relative rounded-full" title={t('settings.notifications')}>
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-        </Button>
+        <NotificationBell />
 
         <div className="ml-1 flex items-center gap-3 rounded-full border border-border/60 bg-card py-1 pl-1 pr-3">
           <Avatar className="h-9 w-9">

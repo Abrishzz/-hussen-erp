@@ -430,5 +430,15 @@
       "submitted": "Submitted",
       "confirmed": "Confirmed"
     }
+  },
+  "notifications": {
+    "allClear": "You're all caught up",
+    "lowStockTitle": "{{count}} material(s) low on stock",
+    "pendingProductionTitle": "{{count}} batch(es) awaiting your confirmation",
+    "awaitingCashTitle": "{{count}} branch close(s) awaiting confirmation",
+    "branchEmptyTitle": "No stock at your branch",
+    "branchEmptyDesc": "Nothing left to sell — ask the manager to distribute stock.",
+    "dayNotClosedTitle": "Today's sales not closed yet",
+    "dayNotClosedDesc": "{{count}} order(s) today — close the day to hand over cash."
   }
 }

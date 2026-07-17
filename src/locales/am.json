@@ -430,5 +430,15 @@
       "submitted": "ቀርቧል",
       "confirmed": "ተረጋግጧል"
     }
+  },
+  "notifications": {
+    "allClear": "ሁሉም ነገር ተከናውኗል",
+    "lowStockTitle": "{{count}} ጥሬ ዕቃ(ዎች) ክምችት አነስተኛ ነው",
+    "pendingProductionTitle": "{{count}} ባች(ዎች) ማረጋገጫዎን በመጠበቅ ላይ",
+    "awaitingCashTitle": "{{count}} የቅርንጫፍ ዝግ(ዎች) ማረጋገጫ በመጠበቅ ላይ",
+    "branchEmptyTitle": "በቅርንጫፍዎ ክምችት የለም",
+    "branchEmptyDesc": "የሚሸጥ ነገር የለም — ስራ አስኪያጁ ክምችት እንዲያሰራጭ ይጠይቁ።",
+    "dayNotClosedTitle": "የዛሬ ሽያጭ ገና አልተዘጋም",
+    "dayNotClosedDesc": "ዛሬ {{count}} ትዕዛዝ(ዞች) — ገንዘብ ለማስረከብ ቀኑን ይዝጉ።"
   }
 }
