@@ -167,7 +167,11 @@
     "outOfStock": "Out",
     "insufficientStock": "{{name}} — not enough stock at this branch",
     "noBranchTitle": "No branch assigned",
-    "noBranchDesc": "Your account is not linked to a branch yet. Ask the owner to assign you to a branch in User Management before selling."
+    "noBranchDesc": "Your account is not linked to a branch yet. Ask the owner to assign you to a branch in User Management before selling.",
+    "each": "each",
+    "items": "items",
+    "exact": "Exact",
+    "shortBy": "Short by {{amount}}"
   },
   "inventory": {
     "title": "Raw Materials Inventory",

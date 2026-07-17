@@ -34,7 +34,7 @@ export const onProductionBatchConfirmed = functions.firestore
     const recipe = recipeSnap.data()!
     const multiplier = after.actualQty / recipe.batchYield
 
-    const batch = admin.firestore.batch()
+    const batch = db.batch()
     const movements: Array<{
       materialId: string
       type: 'OUT'

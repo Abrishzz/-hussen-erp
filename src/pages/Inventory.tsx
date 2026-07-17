@@ -70,20 +70,22 @@ export default function Inventory() {
   return (
     <ErrorBoundary>
       <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h1 className="text-2xl font-bold">{t('inventory.title')}</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setMovementType('OUT'); setMovementOpen(true) }}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-xl font-bold sm:text-2xl">{t('inventory.title')}</h1>
+          {/* Four actions do not fit on a phone in one row — wrap them instead of
+              letting the row widen (and sideways-scroll) the whole page. */}
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+            <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => { setMovementType('OUT'); setMovementOpen(true) }}>
               <ArrowDownUp className="mr-1 h-4 w-4" /> {t('inventory.issueStock')}
             </Button>
-            <Button variant="outline" onClick={() => { setMovementType('WASTE'); setMovementOpen(true) }}>
+            <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => { setMovementType('WASTE'); setMovementOpen(true) }}>
               <AlertTriangle className="mr-1 h-4 w-4" /> {t('inventory.recordWastage')}
             </Button>
-            <Button variant="outline" onClick={() => { setMovementType('IN'); setMovementOpen(true) }}>
+            <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => { setMovementType('IN'); setMovementOpen(true) }}>
               <Package className="mr-1 h-4 w-4" /> {t('inventory.receiveStock')}
             </Button>
-            <Button onClick={() => { setEditMaterial(null); setFormOpen(true) }}>
-              <Plus className="mr-2 h-4 w-4" /> {t('inventory.addMaterial')}
+            <Button size="sm" className="flex-1 sm:flex-none" onClick={() => { setEditMaterial(null); setFormOpen(true) }}>
+              <Plus className="mr-1 h-4 w-4" /> {t('inventory.addMaterial')}
             </Button>
           </div>
         </div>
