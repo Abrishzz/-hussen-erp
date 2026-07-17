@@ -10,6 +10,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { formatCurrency } from '@/lib/utils'
+import { PaymentProofViewer } from '@/features/pos/PaymentProofViewer'
 import { Receipt } from 'lucide-react'
 
 export default function MySales() {
@@ -95,6 +96,7 @@ function MySalesContent() {
                     <TableHead>{t('pos.customerName')}</TableHead>
                     <TableHead className="text-right">{t('common.quantity')}</TableHead>
                     <TableHead>{t('pos.payment')}</TableHead>
+                    <TableHead>{t('pos.paymentProof')}</TableHead>
                     <TableHead className="text-right">{t('common.total')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -105,6 +107,7 @@ function MySalesContent() {
                       <TableCell>{s.customerName || '—'}</TableCell>
                       <TableCell className="text-right">{s.items.reduce((n, it) => n + it.quantity, 0)}</TableCell>
                       <TableCell>{payLabel(s.paymentMethod)}</TableCell>
+                      <TableCell><PaymentProofViewer proof={s.paymentProof} /></TableCell>
                       <TableCell className="text-right font-medium">{formatCurrency(s.total)}</TableCell>
                     </TableRow>
                   ))}

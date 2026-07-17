@@ -125,6 +125,8 @@ export interface Sale {
   cashierId: string
   branchId?: string
   customerName?: string
+  /** For telebirr/bank sales: a compressed Base64 JPEG of the payment proof. */
+  paymentProof?: string
   status: 'completed' | 'voided' | 'held'
   timestamp: Timestamp
 }

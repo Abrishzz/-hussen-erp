@@ -181,7 +181,13 @@
     "each": "each",
     "items": "items",
     "exact": "Exact",
-    "shortBy": "Short by {{amount}}"
+    "shortBy": "Short by {{amount}}",
+    "paymentProof": "Payment Proof",
+    "takeOrUpload": "Take photo or upload",
+    "proofHint": "Screenshot of the transfer confirmation",
+    "retakePhoto": "Retake",
+    "proofFailed": "Could not process the image",
+    "viewProof": "View proof"
   },
   "inventory": {
     "title": "Raw Materials Inventory",

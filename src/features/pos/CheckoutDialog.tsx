@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { posStore } from '@/lib/posStore'
 import { useAddSale, useDeductBranchStock } from '@/hooks/useData'
 import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
+import { useToast } from '@/hooks/useToast'
 import { now } from '@/lib/timestamp'
+import { compressToProof } from '@/lib/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { cn, formatCurrency } from '@/lib/utils'
-import { Banknote, Smartphone, Building2, Check, Copy } from 'lucide-react'
+import { Banknote, Smartphone, Building2, Check, Copy, Camera, X, Loader2 } from 'lucide-react'
 import type { SaleItem, Sale } from '@/types'
 
 type Method = 'cash' | 'telebirr' | 'bank'
@@ -39,12 +41,16 @@ export function CheckoutDialog({ open, onOpenChange, branchId, onCompleted }: Ch
   const { t } = useTranslation()
   const { user } = useAuthStore()
   const { settings } = useSettingsStore()
+  const { show } = useToast()
   const addSale = useAddSale()
   const deductBranchStock = useDeductBranchStock()
   const [customerName, setCustomerName] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<Method>('cash')
   const [cashReceived, setCashReceived] = useState('')
+  const [proof, setProof] = useState<string | null>(null)
+  const [proofBusy, setProofBusy] = useState(false)
   const [saving, setSaving] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const state = posStore.getState()
   const subtotal = posStore.getSubtotal()
@@ -60,8 +66,28 @@ export function CheckoutDialog({ open, onOpenChange, branchId, onCompleted }: Ch
       setCustomerName('')
       setCashReceived('')
       setPaymentMethod('cash')
+      setProof(null)
     }
   }, [open])
+
+  // Cash needs no proof — drop any captured image if they switch back to it.
+  useEffect(() => {
+    if (paymentMethod === 'cash') setProof(null)
+  }, [paymentMethod])
+
+  const handleProofFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // let the same file be re-picked later
+    if (!file) return
+    setProofBusy(true)
+    try {
+      setProof(await compressToProof(file))
+    } catch {
+      show(t('pos.proofFailed'), 'destructive')
+    } finally {
+      setProofBusy(false)
+    }
+  }
 
   // Only offer notes that could actually cover the bill, plus "exact".
   const suggestions = NOTES.filter((n) => n * 100 >= total).slice(0, 3)
@@ -90,6 +116,7 @@ export function CheckoutDialog({ open, onOpenChange, branchId, onCompleted }: Ch
         cashierId: user?.uid || '',
         branchId: branchId || '',
         customerName: customerName || '',
+        paymentProof: paymentMethod !== 'cash' && proof ? proof : '',
         status: 'completed' as const,
         timestamp: now(),
       }
@@ -228,6 +255,53 @@ export function CheckoutDialog({ open, onOpenChange, branchId, onCompleted }: Ch
                   {t('common.copy')}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Payment proof — the telebirr/bank confirmation screenshot, stored on
+              the sale so the manager can verify non-cash takings later. */}
+          {paymentMethod !== 'cash' && (
+            <div className="space-y-2">
+              <Label>{t('pos.paymentProof')}</Label>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleProofFile}
+              />
+              {proof ? (
+                <div className="relative overflow-hidden rounded-2xl border">
+                  <img src={proof} alt={t('pos.paymentProof')} className="max-h-56 w-full object-contain bg-muted" />
+                  <button
+                    type="button"
+                    onClick={() => setProof(null)}
+                    aria-label={t('common.delete')}
+                    className="absolute right-2 top-2 rounded-full bg-background/90 p-1.5 text-destructive shadow hover:bg-background"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="absolute bottom-2 right-2 rounded-lg bg-background/90 px-2.5 py-1 text-xs font-medium shadow hover:bg-background"
+                  >
+                    {t('pos.retakePhoto')}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={proofBusy}
+                  className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-6 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+                >
+                  {proofBusy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
+                  <span className="text-sm font-medium">{proofBusy ? t('common.loading') : t('pos.takeOrUpload')}</span>
+                  <span className="text-xs">{t('pos.proofHint')}</span>
+                </button>
+              )}
             </div>
           )}
 

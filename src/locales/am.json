@@ -181,7 +181,13 @@
     "each": "ለአንዱ",
     "items": "እቃዎች",
     "exact": "ትክክለኛ",
-    "shortBy": "{{amount}} ይጎድላል"
+    "shortBy": "{{amount}} ይጎድላል",
+    "paymentProof": "የክፍያ ማረጋገጫ",
+    "takeOrUpload": "ፎቶ ያንሱ ወይም ይጫኑ",
+    "proofHint": "የዝውውር ማረጋገጫ ቅጽበታዊ ገጽ እይታ",
+    "retakePhoto": "እንደገና አንሳ",
+    "proofFailed": "ምስሉን ማስኬድ አልተቻለም",
+    "viewProof": "ማረጋገጫ ይመልከቱ"
   },
   "inventory": {
     "title": "የጥሬ ዕቃ ክምችት",
