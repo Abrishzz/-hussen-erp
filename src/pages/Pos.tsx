@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProductGrid } from '@/features/pos/ProductGrid'
 import { Cart } from '@/features/pos/Cart'
 import { CheckoutDialog } from '@/features/pos/CheckoutDialog'
 import { DailySalesSummary } from '@/features/pos/DailySalesSummary'
 import { PrintableReceipt } from '@/features/pos/PrintableReceipt'
-import { printReceipt } from '@/lib/receipt'
 import { useSettingsStore } from '@/store/settingsStore'
 import { posStore } from '@/lib/posStore'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
@@ -30,33 +29,22 @@ export default function Pos() {
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
   const [printSale, setPrintSale] = useState<Sale | null>(null)
-  const printedRef = useRef(false)
 
-  // Print once the finished sale has actually rendered into the DOM, otherwise
-  // there is nothing for the print dialog to pick up.
-  // Uses jsPDF autoPrint for thermal/Sunmi printer support, with window.print()
-  // as fallback.
+  // Print the receipt once the completed sale has rendered into the DOM.
+  //
+  // We call the browser's own `window.print()` on an HTML receipt (see
+  // PrintableReceipt) rather than generating a PDF. On Sunmi / Android the
+  // thermal app (RAWBT) registers as a *print service*, so window.print() routes
+  // straight to it — whereas a generated PDF just lands in Downloads. After the
+  // print sheet closes we clear the sale so the next one prints cleanly.
   useEffect(() => {
     if (!printSale) return
-
-    const id = window.setTimeout(() => {
-      try {
-        printReceipt(printSale, {
-          name: settings.shopName,
-          name_am: settings.shopName_am,
-          address: settings.shopName,
-          phone: settings.telebirrNumber || undefined,
-          telebirrNumber: settings.telebirrNumber || undefined,
-          bankAccount: settings.bankAccount || undefined,
-        }, i18n.language as 'en' | 'am', 'print')
-      } catch {
-        window.print()
-      }
-    }, 80)
-
+    const done = () => setPrintSale(null)
+    const id = window.setTimeout(() => window.print(), 120)
+    window.addEventListener('afterprint', done)
     return () => {
       window.clearTimeout(id)
-      printedRef.current = false
+      window.removeEventListener('afterprint', done)
     }
   }, [printSale])
 
