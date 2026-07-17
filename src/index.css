@@ -181,3 +181,68 @@ input[type='number']::-webkit-outer-spin-button {
 @media (prefers-reduced-motion: reduce) {
   .anim-steam, .anim-floaty, .anim-floaty-slow, .anim-twinkle, .anim-spin-slow { animation: none; }
 }
+
+/* ─── Receipt printing ───────────────────────────────────────────────────────
+   The receipt lives in the page as plain HTML and is hidden on screen. When
+   printing we hide everything else and reveal only #print-receipt, so the same
+   markup prints identically in Chrome, Safari and on iOS — where printing a
+   generated PDF from a hidden iframe silently prints the whole app page. */
+.print-receipt { display: none; }
+
+@media print {
+  /* Hide the app, keep the receipt. `visibility` (not `display`) so the
+     receipt's ancestors stay in the layout and it can still be positioned. */
+  body * { visibility: hidden !important; }
+  #print-receipt, #print-receipt * { visibility: visible !important; }
+
+  #print-receipt {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 72mm;
+    padding: 2mm;
+    color: #000;
+    background: #fff;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 9pt;
+    line-height: 1.35;
+  }
+
+  /* 80mm thermal roll, continuous length, no printer margins. */
+  @page { size: 80mm auto; margin: 0; }
+
+  .pr-center { text-align: center; }
+  .pr-left   { text-align: left; }
+  .pr-right  { text-align: right; }
+  .pr-bold   { font-weight: 700; }
+
+  .pr-shop   { font-size: 13pt; font-weight: 700; margin-bottom: 1mm; }
+  .pr-thanks { margin: 1mm 0; font-weight: 700; }
+
+  .pr-rule {
+    border-top: 1px dashed #000;
+    margin: 1.5mm 0;
+  }
+
+  .pr-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 2mm;
+  }
+
+  .pr-total {
+    font-size: 12pt;
+    font-weight: 700;
+    margin-top: 1mm;
+  }
+
+  .pr-table { width: 100%; border-collapse: collapse; }
+  .pr-table th {
+    border-bottom: 1px solid #000;
+    font-weight: 700;
+    padding-bottom: 0.5mm;
+  }
+  .pr-table td { padding: 0.4mm 0; vertical-align: top; }
+  .pr-table th:first-child, .pr-table td:first-child { width: 45%; }
+}

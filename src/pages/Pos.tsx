@@ -1,9 +1,11 @@
-import { useState, useSyncExternalStore } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProductGrid } from '@/features/pos/ProductGrid'
 import { Cart } from '@/features/pos/Cart'
 import { CheckoutDialog } from '@/features/pos/CheckoutDialog'
 import { DailySalesSummary } from '@/features/pos/DailySalesSummary'
+import { PrintableReceipt } from '@/features/pos/PrintableReceipt'
+import { useSettingsStore } from '@/store/settingsStore'
 import { posStore } from '@/lib/posStore'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { Button } from '@/components/ui/button'
@@ -16,15 +18,25 @@ import { useBranchStock, useActiveBranches } from '@/hooks/useData'
 import { useToast } from '@/hooks/useToast'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '@/lib/utils'
-import type { Product } from '@/types'
+import type { Product, Sale } from '@/types'
 
 export default function Pos() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { role, branchId } = useAuthStore()
+  const { settings } = useSettingsStore()
   const { show } = useToast()
   const navigate = useNavigate()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
+  const [printSale, setPrintSale] = useState<Sale | null>(null)
+
+  // Print once the finished sale has actually rendered into the DOM, otherwise
+  // there is nothing for the print dialog to pick up.
+  useEffect(() => {
+    if (!printSale) return
+    const id = window.setTimeout(() => window.print(), 80)
+    return () => window.clearTimeout(id)
+  }, [printSale])
 
   const cart = useSyncExternalStore(posStore.subscribe, posStore.getState)
   const itemCount = cart.items.reduce((n, i) => n + i.quantity, 0)
@@ -150,7 +162,21 @@ export default function Pos() {
         </DialogContent>
       </Dialog>
 
-      <CheckoutDialog open={checkoutOpen} onOpenChange={setCheckoutOpen} branchId={branchScoped ? branchId : null} />
+      <CheckoutDialog
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        branchId={branchScoped ? branchId : null}
+        onCompleted={setPrintSale}
+      />
+
+      {/* Lives on the page (not in the dialog) so it survives the dialog closing
+          and is still mounted when the print dialog opens. */}
+      <PrintableReceipt
+        sale={printSale}
+        shop={{ name: settings.shopName, name_am: settings.shopName_am }}
+        lang={i18n.language as 'en' | 'am'}
+        branchName={branchScoped ? branchName : undefined}
+      />
     </ErrorBoundary>
   )
 }

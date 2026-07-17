@@ -25,9 +25,14 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
   /**
-   * 'sheet' slides up from the bottom of the screen on phones — thumb-reachable
-   * and it can use the full width — and falls back to a centred dialog on
-   * desktop. 'default' is always a centred dialog.
+   * Both variants slide up from the bottom on phones (thumb-reachable, full
+   * width) and centre as a normal dialog from `sm` up. They differ in who owns
+   * the padding and scrolling:
+   *
+   * - 'default' — the sheet pads and scrolls its own content. Use for forms;
+   *   every existing dialog gets the slide-up treatment for free.
+   * - 'sheet'   — no padding, a flex column, so the caller can pin its own
+   *   header/footer and scroll only the middle (POS cart, checkout).
    */
   variant?: 'default' | 'sheet'
   hideClose?: boolean
@@ -53,17 +58,26 @@ const DialogContent = React.forwardRef<
               'sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0',
             ]
           : [
-              'left-[50%] top-[50%] grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 rounded-2xl border p-6',
-              'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+              // Phone: same slide-up sheet, but it keeps its own padding and
+              // scrolls internally so plain form dialogs need no changes.
+              'inset-x-0 bottom-0 grid max-h-[92dvh] w-full gap-4 overflow-y-auto rounded-t-3xl border-t px-4 pb-5 pt-3',
+              'data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
+              // Desktop: centred dialog.
+              'sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[85vh] sm:w-[calc(100%-2rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border sm:p-6',
+              'sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0',
             ],
         className
       )}
       {...props}
     >
-      {/* Grab handle — signals the sheet is dismissible by swiping down. */}
-      {variant === 'sheet' && (
-        <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/25 sm:hidden" />
-      )}
+      {/* Grab handle — signals the sheet is dismissible by swiping down. Phone
+          only: on desktop these are ordinary centred dialogs. */}
+      <div
+        className={cn(
+          'mx-auto h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/25 sm:hidden',
+          variant === 'sheet' ? 'mt-2' : '-mt-1 mb-1'
+        )}
+      />
       {children}
       {!hideClose && (
         <DialogPrimitive.Close

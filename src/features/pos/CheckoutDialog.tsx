@@ -3,9 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { posStore } from '@/lib/posStore'
 import { useAddSale, useDeductBranchStock } from '@/hooks/useData'
 import { useAuthStore } from '@/store/authStore'
-import { useSettingsStore } from '@/store/settingsStore'
 import { now } from '@/lib/timestamp'
-import { printReceipt } from '@/lib/receipt'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { cn, formatCurrency } from '@/lib/utils'
 import { Banknote, Smartphone, Building2, Check } from 'lucide-react'
-import type { SaleItem } from '@/types'
+import type { SaleItem, Sale } from '@/types'
 
 type Method = 'cash' | 'telebirr' | 'bank'
 
@@ -32,12 +30,13 @@ interface CheckoutDialogProps {
   onOpenChange: (open: boolean) => void
   /** When set, the sale is tagged to this branch and branch stock is deducted. */
   branchId?: string | null
+  /** Handed the completed sale so the page can print it (see PrintableReceipt). */
+  onCompleted?: (sale: Sale) => void
 }
 
-export function CheckoutDialog({ open, onOpenChange, branchId }: CheckoutDialogProps) {
-  const { t, i18n } = useTranslation()
+export function CheckoutDialog({ open, onOpenChange, branchId, onCompleted }: CheckoutDialogProps) {
+  const { t } = useTranslation()
   const { user } = useAuthStore()
-  const { settings } = useSettingsStore()
   const addSale = useAddSale()
   const deductBranchStock = useDeductBranchStock()
   const [customerName, setCustomerName] = useState('')
@@ -101,7 +100,9 @@ export function CheckoutDialog({ open, onOpenChange, branchId }: CheckoutDialogP
         await deductBranchStock.mutateAsync({ branchId, items: state.items })
       }
 
-      printReceipt(saleWithId, { name: settings.shopName, name_am: settings.shopName_am }, i18n.language as 'en' | 'am')
+      // Printing is the page's job: the receipt must stay mounted after this
+      // dialog unmounts, or there's nothing left in the DOM to print.
+      onCompleted?.(saleWithId as Sale)
       posStore.clearCart()
       onOpenChange(false)
     } finally {
