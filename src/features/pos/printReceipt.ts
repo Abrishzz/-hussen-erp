@@ -36,6 +36,7 @@ export function buildReceiptHtml(sale: Sale, shop: ReceiptShop, lang: 'en' | 'am
     payment: am ? 'ክፍያ' : 'Payment', cash: am ? 'ጥሬ ገንዘብ' : 'Cash', change: am ? 'መልስ' : 'Change',
     customer: am ? 'ደንበኛ' : 'Customer', date: am ? 'ቀን' : 'Date',
     thanks: am ? 'ስለ ግዢዎ እናመሰግናለን!' : 'Thank you for your purchase!',
+    nonFiscal: am ? 'ይህ ደረሰኝ የግብር ሰነድ አይደለም' : 'NON-FISCAL RECEIPT',
   }
 
   const pay = sale.paymentMethod
@@ -94,6 +95,7 @@ export function buildReceiptHtml(sale: Sale, shop: ReceiptShop, lang: 'en' | 'am
   .thanks { text-align: center; margin-top: 1mm; font-size: 9pt; }
   .signoff { text-align: center; font-weight: 800; font-size: 10pt; letter-spacing: 1px; }
   .stars { text-align: center; letter-spacing: 1px; margin-top: 1mm; }
+  .nonfiscal { text-align: center; margin-top: 1mm; font-size: 7pt; border: 1pt solid #000; padding: 0.5mm; }
 </style>
 </head>
 <body>
@@ -131,6 +133,7 @@ export function buildReceiptHtml(sale: Sale, shop: ReceiptShop, lang: 'en' | 'am
   <div class="double"></div>
   <div class="thanks">${L.thanks}</div>
   <div class="signoff">${esc(brand)}</div>
+  <div class="nonfiscal">${L.nonFiscal}</div>
   <div class="stars">• • • • • • • • • • • • •</div>
   <script>window.print()</script>
 </body>
