@@ -1,10 +1,10 @@
-import { useState, useEffect, useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProductGrid } from '@/features/pos/ProductGrid'
 import { Cart } from '@/features/pos/Cart'
 import { CheckoutDialog } from '@/features/pos/CheckoutDialog'
 import { DailySalesSummary } from '@/features/pos/DailySalesSummary'
-import { PrintableReceipt } from '@/features/pos/PrintableReceipt'
+import { printReceipt } from '@/features/pos/printReceipt'
 import { useSettingsStore } from '@/store/settingsStore'
 import { posStore } from '@/lib/posStore'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
@@ -28,25 +28,6 @@ export default function Pos() {
   const navigate = useNavigate()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
-  const [printSale, setPrintSale] = useState<Sale | null>(null)
-
-  // Print the receipt once the completed sale has rendered into the DOM.
-  //
-  // We call the browser's own `window.print()` on an HTML receipt (see
-  // PrintableReceipt) rather than generating a PDF. On Sunmi / Android the
-  // thermal app (RAWBT) registers as a *print service*, so window.print() routes
-  // straight to it — whereas a generated PDF just lands in Downloads. After the
-  // print sheet closes we clear the sale so the next one prints cleanly.
-  useEffect(() => {
-    if (!printSale) return
-    const done = () => setPrintSale(null)
-    const id = window.setTimeout(() => window.print(), 120)
-    window.addEventListener('afterprint', done)
-    return () => {
-      window.clearTimeout(id)
-      window.removeEventListener('afterprint', done)
-    }
-  }, [printSale])
 
   const cart = useSyncExternalStore(posStore.subscribe, posStore.getState)
   const itemCount = cart.items.reduce((n, i) => n + i.quantity, 0)
@@ -79,6 +60,22 @@ export default function Pos() {
   const openCheckout = () => {
     setCartOpen(false)
     setCheckoutOpen(true)
+  }
+
+  // Print the receipt straight after the sale is saved — from its own isolated
+  // iframe document (see printReceipt), which prints reliably on Sunmi/RAWBT.
+  const handleCompleted = (sale: Sale) => {
+    printReceipt(
+      sale,
+      {
+        name: settings.shopName,
+        name_am: settings.shopName_am,
+        telebirrNumber: settings.telebirrNumber,
+        bankAccount: settings.bankAccount,
+      },
+      i18n.language as 'en' | 'am',
+      branchScoped ? branchName : undefined,
+    )
   }
 
   // A cashier with no branch assigned can't sell — guide them to the owner.
@@ -176,21 +173,7 @@ export default function Pos() {
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
         branchId={branchScoped ? branchId : null}
-        onCompleted={setPrintSale}
-      />
-
-      {/* Lives on the page (not in the dialog) so it survives the dialog closing
-          and is still mounted when the print dialog opens. */}
-      <PrintableReceipt
-        sale={printSale}
-        shop={{
-          name: settings.shopName,
-          name_am: settings.shopName_am,
-          telebirrNumber: settings.telebirrNumber,
-          bankAccount: settings.bankAccount,
-        }}
-        lang={i18n.language as 'en' | 'am'}
-        branchName={branchScoped ? branchName : undefined}
+        onCompleted={handleCompleted}
       />
     </ErrorBoundary>
   )
