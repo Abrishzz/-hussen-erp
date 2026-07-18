@@ -350,7 +350,15 @@
     "salesAnalysis": "የሽያጭ ትንተና",
     "dailySales": "ዕለታዊ ሽያጭ",
     "paymentBreakdown": "የክፍያ ስብጥር",
-    "salesByBranch": "የዛሬ ሽያጭ በቅርንጫፍ"
+    "salesByBranch": "የዛሬ ሽያጭ በቅርንጫፍ",
+    "subtitle": "የዳቦ ቤትዎ ዛሬ እንዴት እየሄደ እንዳለ",
+    "morning": "እንደምን አደሩ",
+    "afternoon": "እንደምን ዋሉ",
+    "evening": "እንደምን አመሹ",
+    "revenueOverview": "የገቢ አጠቃላይ እይታ",
+    "monthlyTarget": "ወርሃዊ ግብ",
+    "vsLastMonth": "ካለፈው ወር",
+    "toGo": "ይቀራል"
   },
   "errors": {
     "pageNotFound": "ገጹ አልተገኘም",

@@ -350,7 +350,15 @@
     "salesAnalysis": "Sales Analysis",
     "dailySales": "Daily Sales",
     "paymentBreakdown": "Payment Breakdown",
-    "salesByBranch": "Today's Sales by Branch"
+    "salesByBranch": "Today's Sales by Branch",
+    "subtitle": "Here's how your bakery is doing today",
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "revenueOverview": "Revenue Overview",
+    "monthlyTarget": "Monthly Target",
+    "vsLastMonth": "vs last month",
+    "toGo": "to go"
   },
   "errors": {
     "pageNotFound": "Page Not Found",
