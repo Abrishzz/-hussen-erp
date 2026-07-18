@@ -62,8 +62,6 @@ export default function Pos() {
     setCheckoutOpen(true)
   }
 
-  // Print the receipt straight after the sale is saved — from its own isolated
-  // iframe document (see printReceipt), which prints reliably on Sunmi/RAWBT.
   const handleCompleted = (sale: Sale) => {
     printReceipt(
       sale,

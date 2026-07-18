@@ -132,6 +132,7 @@ export function buildReceiptHtml(sale: Sale, shop: ReceiptShop, lang: 'en' | 'am
   <div class="thanks">${L.thanks}</div>
   <div class="signoff">${esc(brand)}</div>
   <div class="stars">• • • • • • • • • • • • •</div>
+  <script>window.print()</script>
 </body>
 </html>`
 }
@@ -161,22 +162,7 @@ export function printReceipt(sale: Sale, shop: ReceiptShop, lang: 'en' | 'am', b
   doc.write(buildReceiptHtml(sale, shop, lang, branchName))
   doc.close()
 
-  let done = false
-  const fire = () => {
-    if (done) return
-    done = true
-    try {
-      win.focus()
-      win.print()
-    } catch {
-      /* ignore — nothing more we can do */
-    } finally {
-      window.setTimeout(() => iframe.remove(), 2000)
-    }
-  }
-
-  // Print once the little document has laid out; onload is most reliable, with a
-  // timeout fallback for engines that don't fire it for document.write.
-  iframe.onload = fire
-  window.setTimeout(fire, 400)
+  // The receipt HTML includes <script>window.print()</script> so the iframe
+  // prints itself automatically. Clean up the iframe after printing.
+  window.setTimeout(() => iframe.remove(), 5000)
 }
