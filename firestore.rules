@@ -98,23 +98,23 @@ service cloud.firestore {
 
     // === PRODUCTS COLLECTION ===
     match /products/{productId} {
-      // Cashier & Staff: read only
-      allow read: if isCashier() || isStaff();
+      // Cashier, Staff & Manager: read only (manager needs it for recipes)
+      allow read: if isCashier() || isStaff() || isManager();
       // Owner: full access (already covered by top-level rule)
     }
 
     // === RAW MATERIALS COLLECTION ===
     match /rawMaterials/{materialId} {
-      allow read: if isStaff() || isCashier();
-      // Write: staff can update stock, owner full
-      allow create, update: if isStaff();
+      allow read: if isStaff() || isCashier() || isManager();
+      // Staff & Manager can update stock (manager runs Production too); owner full.
+      allow create, update: if isStaff() || isManager();
     }
 
     // === STOCK MOVEMENTS COLLECTION ===
     match /stockMovements/{movId} {
-      allow read: if isStaff() || isCashier();
-      allow create: if isStaff();
-      allow update: if isStaff();
+      allow read: if isStaff() || isCashier() || isManager();
+      allow create: if isStaff() || isManager();
+      allow update: if isStaff() || isManager();
     }
 
     // === SUPPLIERS COLLECTION ===
@@ -125,21 +125,21 @@ service cloud.firestore {
 
     // === RECIPES COLLECTION ===
     match /recipes/{recipeId} {
-      allow read: if isStaff() || isCashier();
-      allow write: if isStaff();
+      allow read: if isStaff() || isCashier() || isManager();
+      allow write: if isStaff() || isManager();
     }
 
     // === PRODUCTION BATCHES COLLECTION ===
     match /productionBatches/{batchId} {
       allow read: if isStaff() || isCashier() || isManager();
-      allow create, update: if isStaff();
-      allow update: if isManager(); // manager confirms produced quantity
+      // Manager has full Production Planning access (create + update), same as staff.
+      allow create, update: if isStaff() || isManager();
     }
 
     // === FINISHED GOODS COLLECTION ===
     match /finishedGoods/{productId} {
-      allow read: if isStaff() || isCashier();
-      allow write: if isStaff();
+      allow read: if isStaff() || isCashier() || isManager();
+      allow write: if isStaff() || isManager();
     }
 
     // === EMPLOYEES COLLECTION ===

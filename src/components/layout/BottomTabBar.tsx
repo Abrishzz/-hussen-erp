@@ -45,7 +45,7 @@ const tabItems: TabItem[] = [
   { label: 'nav.cashClose', path: '/cash-close', icon: Banknote, roles: ['owner', 'manager', 'cashier'] },
   { label: 'nav.distribution', path: '/distribution', icon: Warehouse, roles: ['owner', 'manager'] },
   { label: 'nav.inventory', path: '/inventory', icon: Package, roles: ['owner', 'staff'] },
-  { label: 'nav.production', path: '/production', icon: Factory, roles: ['owner', 'staff'] },
+  { label: 'nav.production', path: '/production', icon: Factory, roles: ['owner', 'staff', 'manager'] },
   { label: 'nav.products', path: '/products', icon: Croissant, roles: ['owner'] },
   { label: 'nav.finance', path: '/finance', icon: Wallet, roles: ['owner'] },
   { label: 'nav.hr', path: '/hr', icon: Users, roles: ['owner'] },

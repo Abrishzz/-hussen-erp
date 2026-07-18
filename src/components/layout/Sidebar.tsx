@@ -40,7 +40,7 @@ const navItems: NavItem[] = [
   { label: 'nav.cashClose', path: '/cash-close', icon: Banknote, roles: ['owner', 'manager', 'cashier'] },
   { label: 'Products', path: '/products', icon: Grid3X3, roles: ['owner'] },
   { label: 'nav.inventory', path: '/inventory', icon: Package, roles: ['owner', 'staff'] },
-  { label: 'nav.production', path: '/production', icon: Factory, roles: ['owner', 'staff'] },
+  { label: 'nav.production', path: '/production', icon: Factory, roles: ['owner', 'staff', 'manager'] },
   { label: 'nav.hr', path: '/hr', icon: Users, roles: ['owner'] },
   { label: 'nav.finance', path: '/finance', icon: Wallet, roles: ['owner'] },
   { label: 'nav.reports', path: '/reports', icon: BarChart3, roles: ['owner', 'manager'] },
