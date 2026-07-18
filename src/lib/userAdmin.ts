@@ -61,3 +61,15 @@ export async function createUserAccount(input: NewUserInput): Promise<string> {
     await deleteApp(secondaryApp)
   }
 }
+
+import { httpsCallable } from 'firebase/functions'
+import { functions } from '@/lib/firebase'
+
+/**
+ * Updates a user's password via the changeUserPassword Cloud Function.
+ * The cloud function verifies that the caller is an owner.
+ */
+export async function updateUserPassword(uid: string, newPassword: string): Promise<void> {
+  const changePassword = httpsCallable(functions, 'changeUserPassword')
+  await changePassword({ uid, newPassword })
+}

@@ -169,3 +169,30 @@ export const checkLowStock = functions.https.onCall(async (_, context) => {
 
   return { lowStockItems, count: lowStockItems.length }
 })
+
+export const changeUserPassword = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be authenticated')
+  }
+  
+  const callerUid = context.auth.uid
+  const callerRecord = await admin.auth().getUser(callerUid)
+  
+  if (callerRecord.customClaims?.role !== 'owner') {
+    throw new functions.https.HttpsError('permission-denied', 'Only owners can change user passwords')
+  }
+
+  const { uid, newPassword } = data
+  if (!uid || !newPassword || newPassword.length < 6) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid uid or password too short')
+  }
+
+  try {
+    await admin.auth().updateUser(uid, { password: newPassword })
+    functions.logger.info(`Password updated for user ${uid} by owner ${callerUid}`)
+    return { success: true }
+  } catch (error) {
+    functions.logger.error(`Failed to update password for ${uid}`, error)
+    throw new functions.https.HttpsError('internal', 'Failed to update password')
+  }
+})

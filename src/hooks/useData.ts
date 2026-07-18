@@ -98,6 +98,14 @@ export function useUpdateUser() {
   })
 }
 
+export function useRemoveUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteDoc(doc(db, 'users', id)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+  })
+}
+
 // ─── Products ───
 export function useProducts() {
   return useCollection<Product>('products', [where('isActive', '==', true)])

@@ -6,6 +6,7 @@ import {
   enableMultiTabIndexedDbPersistence,
 } from 'firebase/firestore'
 import { getStorage, connectStorageEmulator } from 'firebase/storage'
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,12 +25,14 @@ const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const storage = getStorage(app)
+export const functions = getFunctions(app)
 
 if (useEmulators) {
   // Point the SDK at the locally running Firebase Emulator Suite.
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
   connectFirestoreEmulator(db, '127.0.0.1', 8080)
   connectStorageEmulator(storage, '127.0.0.1', 9199)
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001)
   console.info('🔥 Firebase connected to local emulators')
 } else {
   // Enable offline persistence only against the real backend.

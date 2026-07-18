@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useUsers, useUpdateUser, useActiveBranches } from '@/hooks/useData'
-import { createUserAccount } from '@/lib/userAdmin'
+import { useUsers, useUpdateUser, useRemoveUser, useActiveBranches } from '@/hooks/useData'
+import { createUserAccount, updateUserPassword } from '@/lib/userAdmin'
 import { useToast } from '@/hooks/useToast'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { DataTable } from '@/components/ui/data-table'
@@ -16,7 +16,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { UserPlus, ShieldCheck, Ban, RotateCcw } from 'lucide-react'
+import { UserPlus, ShieldCheck, Ban, RotateCcw, Pencil, Trash2 } from 'lucide-react'
 import type { SystemUser, UserRole } from '@/types'
 
 const ROLES: UserRole[] = ['owner', 'manager', 'cashier', 'staff']
@@ -31,10 +31,14 @@ function UsersContent() {
   const { data: users, isLoading } = useUsers()
   const { data: branches } = useActiveBranches()
   const updateUser = useUpdateUser()
+  const removeUser = useRemoveUser()
 
   const [createOpen, setCreateOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toggleUser, setToggleUser] = useState<SystemUser | null>(null)
+  const [deleteUser, setDeleteUser] = useState<SystemUser | null>(null)
+  const [editUser, setEditUser] = useState<SystemUser | null>(null)
   const [form, setForm] = useState({
     email: '', password: '', displayName: '', phone: '',
     role: 'cashier' as UserRole, branchId: '',
@@ -99,6 +103,44 @@ function UsersContent() {
     }
   }
 
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editUser) return
+    if (form.password && form.password.length < 6) {
+      show(t('users.passwordTooShort'), 'destructive')
+      return
+    }
+    setSaving(true)
+    try {
+      await updateUser.mutateAsync({ 
+        id: editUser.id, 
+        data: { displayName: form.displayName, phone: form.phone } 
+      })
+      if (form.password) {
+        await updateUserPassword(editUser.id, form.password)
+      }
+      show(t('common.success'), 'success')
+      setEditOpen(false)
+      setEditUser(null)
+    } catch {
+      show(t('users.updateFailed'), 'destructive')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteUser) return
+    try {
+      await removeUser.mutateAsync(deleteUser.id)
+      show(t('common.deleted'), 'success')
+    } catch {
+      show(t('common.error'), 'destructive')
+    } finally {
+      setDeleteUser(null)
+    }
+  }
+
   const roleVariant = (role: UserRole) =>
     role === 'owner' ? 'default' : role === 'cashier' ? 'secondary' : 'secondary'
 
@@ -144,16 +186,27 @@ function UsersContent() {
       </Badge>
     )},
     { key: 'actions', header: t('common.actions'), cell: (u: SystemUser) => (
-      <Button
-        variant="ghost"
-        size="sm"
-        className={u.isActive ? 'text-destructive' : ''}
-        onClick={() => setToggleUser(u)}
-      >
-        {u.isActive
-          ? <><Ban className="mr-1 h-4 w-4" /> {t('users.deactivate')}</>
-          : <><RotateCcw className="mr-1 h-4 w-4" /> {t('users.activate')}</>}
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+          setEditUser(u)
+          setForm({ ...form, displayName: u.displayName || '', phone: u.phone || '', password: '' })
+          setEditOpen(true)
+        }}>
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-8 w-8 ${u.isActive ? 'text-amber-500' : 'text-emerald-500'}`}
+          onClick={() => setToggleUser(u)}
+          title={u.isActive ? t('users.deactivate') : t('users.activate')}
+        >
+          {u.isActive ? <Ban className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
+        </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteUser(u)}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
     )},
   ]
 
@@ -240,6 +293,41 @@ function UsersContent() {
         description={toggleUser?.isActive ? t('users.deactivateConfirm') : t('users.activateConfirm')}
         variant={toggleUser?.isActive ? 'destructive' : 'default'}
         onConfirm={confirmToggle}
+      />
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('common.name')}</Label>
+              <Input value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common.phone')}</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>New Password (Optional)</Label>
+              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={6} placeholder="Leave blank to keep current" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>{t('common.cancel')}</Button>
+              <Button type="submit" disabled={saving}>{saving ? t('common.loading') : t('common.save')}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteUser}
+        onOpenChange={() => setDeleteUser(null)}
+        title={t('common.delete')}
+        description="Are you sure you want to permanently delete this user?"
+        variant="destructive"
+        onConfirm={confirmDelete}
       />
     </div>
   )
