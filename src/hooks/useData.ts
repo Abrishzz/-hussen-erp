@@ -24,7 +24,7 @@ import type {
   Recipe, ProductionBatch, FinishedGood,
   Employee, Attendance, Payroll, Expense, SystemUser,
   Branch, WarehouseStockItem, BranchStockItem, Distribution, DistributionLine,
-  CashClose, CashCloseReturn, CartItem, Loan,
+  CashClose, CashCloseReturn, CartItem, Loan, HrApproval,
 } from '@/types'
 
 export { where, orderBy, limit, Timestamp }
@@ -637,5 +637,45 @@ export function useConfirmCashClose() {
         confirmedAt: Timestamp.now(),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['cashCloses'] }),
+  })
+}
+
+// ─── HR Approvals ───
+/** Fetch all HR approval requests (owner sees all, manager sees own). */
+export function useHrApprovals() {
+  return useCollection<HrApproval>('hrApprovals', [orderBy('submittedAt', 'desc')])
+}
+
+/** Manager submits an HR action for owner approval. */
+export function useSubmitHrApproval() {
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  return useMutation({
+    mutationFn: (data: Omit<HrApproval, 'id' | 'submittedBy' | 'submittedByName' | 'submittedAt' | 'status'>) =>
+      addDoc(collection(db, 'hrApprovals'), {
+        ...data,
+        status: 'pending',
+        submittedBy: user?.uid || '',
+        submittedByName: user?.displayName || '',
+        submittedAt: Timestamp.now(),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hrApprovals'] }),
+  })
+}
+
+/** Owner approves or rejects an HR approval request. */
+export function useReviewHrApproval() {
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  return useMutation({
+    mutationFn: ({ id, status, note }: { id: string; status: 'approved' | 'rejected'; note?: string }) =>
+      updateDoc(doc(db, 'hrApprovals', id), {
+        status,
+        note: note || '',
+        reviewedBy: user?.uid || '',
+        reviewedByName: user?.displayName || '',
+        reviewedAt: Timestamp.now(),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hrApprovals'] }),
   })
 }

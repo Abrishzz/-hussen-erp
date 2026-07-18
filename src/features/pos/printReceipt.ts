@@ -30,7 +30,7 @@ export function buildReceiptHtml(sale: Sale, shop: ReceiptShop, lang: 'en' | 'am
   const itemName = (i: Sale['items'][number]) => (am ? i.name_am || i.name_en : i.name_en)
 
   const L = {
-    receipt: am ? 'ደረሰኝ' : 'SALES RECEIPT',
+    receipt: am ? 'ደረሰኝ' : 'SALES TICKET',
     item: am ? 'ዕቃ' : 'Item', qty: am ? 'ብዛት' : 'Qty', price: am ? 'ዋጋ' : 'Price', amount: am ? 'ድምር' : 'Amount',
     total: am ? 'ጠቅላላ' : 'TOTAL', subtotal: am ? 'ንዑስ ድምር' : 'Subtotal', discount: am ? 'ቅናሽ' : 'Discount',
     payment: am ? 'ክፍያ' : 'Payment', cash: am ? 'ጥሬ ገንዘብ' : 'Cash', change: am ? 'መልስ' : 'Change',

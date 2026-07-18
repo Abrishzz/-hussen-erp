@@ -291,3 +291,26 @@ export interface AppSettings {
   telebirrNumber?: string
   bankAccount?: string
 }
+
+/** An action submitted by a manager for owner approval in the HR module. */
+export interface HrApproval {
+  id: string
+  type:
+    | 'add_employee'
+    | 'edit_employee'
+    | 'delete_employee'
+    | 'add_attendance'
+    | 'issue_loan'
+    | 'settle_loan'
+    | 'pay_salary'
+  payload: Record<string, unknown>
+  status: 'pending' | 'approved' | 'rejected'
+  submittedBy: string
+  submittedByName: string
+  submittedAt: Timestamp
+  reviewedBy?: string
+  reviewedByName?: string
+  reviewedAt?: Timestamp
+  note?: string
+}
+
