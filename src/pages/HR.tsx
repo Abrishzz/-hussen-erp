@@ -4,6 +4,7 @@ import { now, dateToTimestamp } from '@/lib/timestamp'
 import {
   useEmployees, useAddEmployee, useUpdateEmployee, useDeleteEmployee,
   useAttendance, useAddAttendance, usePayroll, useAddPayroll,
+  useLoans, useAddLoan, useUpdateLoan,
 } from '@/hooks/useData'
 import { useToast } from '@/hooks/useToast'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
@@ -23,10 +24,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Pencil, Trash2, UserPlus, ClipboardCheck, Wallet, Download } from 'lucide-react'
+import { Pencil, Trash2, UserPlus, ClipboardCheck, Wallet, Download, Plus } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { exportPayrollPDF } from '@/lib/reports'
 import { toDate } from '@/lib/analytics'
+import { now as tsNow } from '@/lib/timestamp'
 import type { Employee } from '@/types'
 
 export default function HR() {
@@ -109,6 +111,7 @@ function HRContent() {
         <TabsList>
           <TabsTrigger value="employees">{t('hr.employees')}</TabsTrigger>
           <TabsTrigger value="attendance">{t('hr.attendance')}</TabsTrigger>
+          <TabsTrigger value="loans">{t('hr.loans.title')}</TabsTrigger>
           <TabsTrigger value="payroll">{t('hr.payroll')}</TabsTrigger>
         </TabsList>
         <TabsContent value="employees">
@@ -116,6 +119,9 @@ function HRContent() {
         </TabsContent>
         <TabsContent value="attendance">
           <AttendanceView employees={employees} />
+        </TabsContent>
+        <TabsContent value="loans">
+          <LoansView employees={employees} />
         </TabsContent>
         <TabsContent value="payroll">
           <PayrollView employees={employees} />
@@ -281,6 +287,183 @@ function AttendanceView({ employees }: { employees?: Employee[] }) {
   )
 }
 
+// ─── Loans & advances sub-component ───
+function LoansView({ employees }: { employees?: Employee[] }) {
+  const { t } = useTranslation()
+  const { show } = useToast()
+  const { data: loans, isLoading } = useLoans()
+  const addLoan = useAddLoan()
+  const updateLoan = useUpdateLoan()
+
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [settleId, setSettleId] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    empId: '', type: 'loan' as 'loan' | 'advance', amount: '', installment: '', reason: '',
+  })
+
+  const reset = () => setForm({ empId: '', type: 'loan', amount: '', installment: '', reason: '' })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const emp = employees?.find((x) => x.id === form.empId)
+    const principal = Math.round(parseFloat(form.amount || '0') * 100)
+    if (!emp || principal <= 0) {
+      show(t('hr.loans.invalid'), 'destructive')
+      return
+    }
+    // An advance repays in one payroll → installment = principal.
+    const installment = form.type === 'advance'
+      ? principal
+      : Math.min(principal, Math.round(parseFloat(form.installment || '0') * 100) || principal)
+    setSaving(true)
+    try {
+      await addLoan.mutateAsync({
+        empId: emp.id,
+        empName: emp.name,
+        type: form.type,
+        principal,
+        installment,
+        balance: principal,
+        reason: form.reason,
+        issuedAt: tsNow(),
+        status: 'active',
+      })
+      show(t('hr.loans.issuedToast', { name: emp.name }), 'success')
+      setOpen(false)
+      reset()
+    } catch {
+      show(t('common.error'), 'destructive')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const settle = async () => {
+    if (!settleId) return
+    await updateLoan.mutateAsync({ id: settleId, data: { balance: 0, status: 'settled' } })
+    setSettleId(null)
+  }
+
+  const totalOutstanding = (loans || []).reduce((s, l) => s + (l.status === 'active' ? l.balance : 0), 0)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="text-sm text-muted-foreground">
+          {t('hr.loans.outstanding')}: <span className="font-bold text-foreground">{formatCurrency(totalOutstanding)}</span>
+        </div>
+        <Button onClick={() => { reset(); setOpen(true) }}>
+          <Plus className="mr-2 h-4 w-4" /> {t('hr.loans.issue')}
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <p className="py-8 text-center text-muted-foreground">{t('common.loading')}</p>
+      ) : !loans || loans.length === 0 ? (
+        <p className="py-8 text-center text-muted-foreground">{t('hr.loans.none')}</p>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead>{t('common.type')}</TableHead>
+                <TableHead className="text-right">{t('hr.loans.principal')}</TableHead>
+                <TableHead className="text-right">{t('hr.loans.installment')}</TableHead>
+                <TableHead className="text-right">{t('hr.loans.balance')}</TableHead>
+                <TableHead>{t('common.date')}</TableHead>
+                <TableHead>{t('common.status')}</TableHead>
+                <TableHead className="text-right">{t('common.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loans.map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell className="font-medium">{l.empName}</TableCell>
+                  <TableCell><Badge variant="secondary">{t(`hr.loans.type.${l.type}`)}</Badge></TableCell>
+                  <TableCell className="text-right">{formatCurrency(l.principal)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(l.installment)}</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(l.balance)}</TableCell>
+                  <TableCell>{formatDate(toDate(l.issuedAt))}</TableCell>
+                  <TableCell>
+                    <Badge variant={l.status === 'settled' ? 'success' : 'secondary'}>
+                      {t(`hr.loans.status.${l.status}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {l.status === 'active' && (
+                      <Button variant="ghost" size="sm" onClick={() => setSettleId(l.id)}>{t('hr.loans.markSettled')}</Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>{t('hr.loans.issue')}</DialogTitle></DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('common.name')}</Label>
+              <Select value={form.empId} onValueChange={(v) => setForm({ ...form, empId: v })}>
+                <SelectTrigger><SelectValue placeholder={t('hr.selectEmployee')} /></SelectTrigger>
+                <SelectContent>
+                  {employees?.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('common.type')}</Label>
+                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as 'loan' | 'advance' })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="loan">{t('hr.loans.type.loan')}</SelectItem>
+                    <SelectItem value="advance">{t('hr.loans.type.advance')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('common.amount')} (ETB)</Label>
+                <Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
+              </div>
+            </div>
+            {form.type === 'loan' && (
+              <div className="space-y-2">
+                <Label>{t('hr.loans.installment')} (ETB)</Label>
+                <Input type="number" step="0.01" value={form.installment} onChange={(e) => setForm({ ...form, installment: e.target.value })} placeholder={t('hr.loans.installmentHint')} />
+              </div>
+            )}
+            {form.type === 'advance' && (
+              <p className="text-xs text-muted-foreground">{t('hr.loans.advanceHint')}</p>
+            )}
+            <div className="space-y-2">
+              <Label>{t('hr.loans.reason')}</Label>
+              <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
+              <Button type="submit" disabled={saving}>{saving ? t('common.saving') : t('hr.loans.issue')}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!settleId}
+        onOpenChange={() => setSettleId(null)}
+        title={t('hr.loans.markSettled')}
+        description={t('hr.loans.settleConfirm')}
+        onConfirm={settle}
+      />
+    </div>
+  )
+}
+
 interface PayrollLine {
   empId: string
   name: string
@@ -294,6 +477,8 @@ function PayrollView({ employees }: { employees?: Employee[] }) {
   const { t, i18n } = useTranslation()
   const { show } = useToast()
   const addPayroll = useAddPayroll()
+  const updateLoan = useUpdateLoan()
+  const { data: allLoans } = useLoans()
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
   const [lines, setLines] = useState<PayrollLine[]>([])
   const [payingId, setPayingId] = useState<string | null>(null)
@@ -326,15 +511,39 @@ function PayrollView({ employees }: { employees?: Employee[] }) {
     const emp = employees?.find((e) => e.id === line.empId)
     setPayingId(line.empId)
     try {
+      const baseNet = netPay(line, emp)
+
+      // Find active loans for this employee
+      const empLoans = (allLoans || []).filter(
+        (l) => l.empId === line.empId && l.status === 'active'
+      )
+      const totalInstallment = empLoans.reduce((s, l) => s + l.installment, 0)
+      const loanRepayment = Math.min(totalInstallment, baseNet)
+
       await addPayroll.mutateAsync({
         empId: line.empId,
         month,
         baseSalary: line.baseSalary,
         daysWorked: line.daysWorked,
         deductions: line.deductions,
-        netPay: netPay(line, emp),
+        loanRepayment,
+        netPay: baseNet - loanRepayment,
         paidAt: now(),
       })
+
+      // Deduct loan repayments from active loan balances
+      for (const loan of empLoans) {
+        const deduction = Math.min(loan.installment, loan.balance)
+        const newBalance = loan.balance - deduction
+        await updateLoan.mutateAsync({
+          id: loan.id,
+          data: {
+            balance: newBalance,
+            status: newBalance <= 0 ? 'settled' : 'active',
+          },
+        })
+      }
+
       show(t('hr.salaryPaid', { name: line.name }), 'success')
     } catch {
       show(t('common.error'), 'destructive')
@@ -343,7 +552,12 @@ function PayrollView({ employees }: { employees?: Employee[] }) {
     }
   }
 
-  const totalNet = lines.reduce((s, l) => s + netPay(l, employees?.find((e) => e.id === l.empId)), 0)
+  const totalNet = lines.reduce((s, l) => {
+    const base = netPay(l, employees?.find((e) => e.id === l.empId))
+    const empLoans = (allLoans || []).filter((x) => x.empId === l.empId && x.status === 'active')
+    const loanDed = Math.min(empLoans.reduce((a, x) => a + x.installment, 0), base)
+    return s + base - loanDed
+  }, 0)
 
   return (
     <div className="space-y-4">
@@ -368,6 +582,7 @@ function PayrollView({ employees }: { employees?: Employee[] }) {
                 <TableHead className="text-right">{t('hr.baseSalary')}</TableHead>
                 <TableHead className="text-right">{t('hr.daysWorked')}</TableHead>
                 <TableHead className="text-right">{t('hr.deductions')}</TableHead>
+                <TableHead className="text-right">{t('hr.loans.deduction')}</TableHead>
                 <TableHead className="text-right">{t('hr.netPay')}</TableHead>
                 <TableHead className="text-right">{t('common.actions')}</TableHead>
               </TableRow>
@@ -376,6 +591,13 @@ function PayrollView({ employees }: { employees?: Employee[] }) {
               {lines.map((l) => {
                 const emp = employees?.find((e) => e.id === l.empId)
                 const done = isPaid(l.empId)
+                const baseNet = netPay(l, emp)
+                const empActiveLoans = (allLoans || []).filter(
+                  (x) => x.empId === l.empId && x.status === 'active'
+                )
+                const totalInstallment = empActiveLoans.reduce((s, x) => s + x.installment, 0)
+                const loanDeduction = Math.min(totalInstallment, baseNet)
+                const finalNet = baseNet - loanDeduction
                 return (
                   <TableRow key={l.empId}>
                     <TableCell className="font-medium">{l.name}</TableCell>
@@ -399,7 +621,14 @@ function PayrollView({ employees }: { employees?: Employee[] }) {
                         className="ml-auto h-8 w-24 text-right"
                       />
                     </TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(netPay(l, emp))}</TableCell>
+                    <TableCell className="text-right">
+                      {loanDeduction > 0 ? (
+                        <span className="text-destructive">{formatCurrency(loanDeduction)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(finalNet)}</TableCell>
                     <TableCell className="text-right">
                       {done ? (
                         <Badge variant="success">{t('hr.paid')}</Badge>

@@ -275,6 +275,31 @@
       "absent": "አልተገኘም",
       "late": "ዘግይቷል",
       "half-day": "ግማሽ ቀን"
+    },
+    "loans": {
+      "title": "ብድር እና ቅድመ ክፍያ",
+      "issue": "ብድር ስጥ",
+      "outstanding": "ያልተከፈለ",
+      "none": "እስካሁን ምንም ብድር ወይም ቅድመ ክፍያ አልተሰጠም።",
+      "principal": "ዋና ገንዘብ",
+      "installment": "የክፍያ መጠን",
+      "balance": "ቀሪ",
+      "type": {
+        "loan": "ብድር",
+        "advance": "ቅድመ ክፍያ"
+      },
+      "status": {
+        "active": "ንቁ",
+        "settled": "ተከፍሏል"
+      },
+      "markSettled": "የተከፈለ ምልክት አድርግ",
+      "settleConfirm": "ይህ ብድር ሙሉ በሙሉ ተከፍሏል ብለው ያስባሉ?",
+      "invalid": "እባክዎ ትክክለኛ ሰራተኛ ይምረጡ እና መጠን ያስገቡ።",
+      "issuedToast": "ብድር ለ{{name}} ተሰጥቷል",
+      "installmentHint": "በእያንዳንዱ ደመወዝ የሚከፈል",
+      "advanceHint": "በሚቀጥለው ደመወዝ ሙሉ በሙሉ ይከፈላል።",
+      "reason": "ምክንያት",
+      "deduction": "የብድር ቅነሳ"
     }
   },
   "finance": {

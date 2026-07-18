@@ -275,6 +275,31 @@
       "absent": "Absent",
       "late": "Late",
       "half-day": "Half Day"
+    },
+    "loans": {
+      "title": "Loans & Advances",
+      "issue": "Issue Loan",
+      "outstanding": "Outstanding",
+      "none": "No loans or advances issued yet.",
+      "principal": "Principal",
+      "installment": "Installment",
+      "balance": "Balance",
+      "type": {
+        "loan": "Loan",
+        "advance": "Advance"
+      },
+      "status": {
+        "active": "Active",
+        "settled": "Settled"
+      },
+      "markSettled": "Mark Settled",
+      "settleConfirm": "Mark this loan as fully repaid?",
+      "invalid": "Select a valid employee and enter an amount.",
+      "issuedToast": "Loan issued to {{name}}",
+      "installmentHint": "Per-payroll repayment",
+      "advanceHint": "Will be repaid in full on the next payroll.",
+      "reason": "Reason",
+      "deduction": "Loan Repayment"
     }
   },
   "finance": {

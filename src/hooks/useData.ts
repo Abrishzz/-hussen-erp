@@ -24,7 +24,7 @@ import type {
   Recipe, ProductionBatch, FinishedGood,
   Employee, Attendance, Payroll, Expense, SystemUser,
   Branch, WarehouseStockItem, BranchStockItem, Distribution, DistributionLine,
-  CashClose, CashCloseReturn, CartItem,
+  CashClose, CashCloseReturn, CartItem, Loan,
 } from '@/types'
 
 export { where, orderBy, limit, Timestamp }
@@ -349,6 +349,30 @@ export function useAddPayroll() {
   return useMutation({
     mutationFn: (data: Omit<Payroll, 'id'>) => addDoc(collection(db, 'payroll'), data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['payroll'] }),
+  })
+}
+
+// ─── Loans & advances ───
+export function useLoans() {
+  return useCollection<Loan>('loans', [orderBy('issuedAt', 'desc')])
+}
+
+export function useAddLoan() {
+  const qc = useQueryClient()
+  const { user } = useAuthStore()
+  return useMutation({
+    mutationFn: (data: Omit<Loan, 'id' | 'issuedBy'>) =>
+      addDoc(collection(db, 'loans'), { ...data, issuedBy: user?.uid || '' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['loans'] }),
+  })
+}
+
+export function useUpdateLoan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Loan> }) =>
+      updateDoc(doc(db, 'loans', id), data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['loans'] }),
   })
 }
 

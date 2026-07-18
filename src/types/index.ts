@@ -255,8 +255,29 @@ export interface Payroll {
   baseSalary: number
   daysWorked: number
   deductions: number
+  /** Amount withheld this payroll to repay outstanding loans/advances (cents). */
+  loanRepayment?: number
   netPay: number
   paidAt: Timestamp
+}
+
+/**
+ * A loan or salary advance given to an employee, repaid by withholding
+ * `installment` from each payroll until `balance` reaches zero. An advance is
+ * just a loan whose installment equals the principal (repaid in one payroll).
+ */
+export interface Loan {
+  id: string
+  empId: string
+  empName: string
+  type: 'loan' | 'advance'
+  principal: number
+  installment: number
+  balance: number
+  reason?: string
+  issuedAt: Timestamp
+  issuedBy?: string
+  status: 'active' | 'settled'
 }
 
 export interface AppSettings {

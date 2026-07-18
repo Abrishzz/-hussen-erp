@@ -166,6 +166,12 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
+    // === LOANS & ADVANCES COLLECTION ===
+    match /loans/{loanId} {
+      allow read: if isOwner();
+      allow write: if isOwner();
+    }
+
     // === SETTINGS COLLECTION ===
     match /settings/{settingId} {
       allow read: if isAuthenticated();
