@@ -79,7 +79,7 @@ export interface AppUser {
   role: UserRole
   phone?: string
   isActive: boolean
-  language?: 'en' | 'am'
+  language?: 'en' | 'am' | 'om'
 }
 
 /** A `/users/{uid}` document — the record used to manage login accounts. */
@@ -90,7 +90,7 @@ export interface SystemUser {
   role: UserRole
   phone?: string
   isActive: boolean
-  language?: 'en' | 'am'
+  language?: 'en' | 'am' | 'om'
   /** For cashiers: the branch they sell at. */
   branchId?: string
   createdAt?: Timestamp
@@ -285,7 +285,7 @@ export interface AppSettings {
   shopName_am: string
   logo: string
   taxRate: number
-  defaultLanguage: 'en' | 'am'
+  defaultLanguage: 'en' | 'am' | 'om'
   darkMode: boolean
   currency: string
   telebirrNumber?: string
@@ -312,5 +312,34 @@ export interface HrApproval {
   reviewedByName?: string
   reviewedAt?: Timestamp
   note?: string
+}
+
+export interface OrderItem {
+  productId: string
+  name_en: string
+  name_am: string
+  price: number
+  quantity: number
+  imageUrl?: string
+}
+
+export interface Order {
+  id: string
+  items: OrderItem[]
+  subtotal: number
+  discount: number
+  total: number
+  customerName: string
+  customerEmail: string
+  customerPhone: string
+  deliveryAddress: string
+  notes?: string
+  paymentMethod: 'cash' | 'telebirr' | 'bank'
+  /** For telebirr/bank: the transaction reference number the customer received when paying. */
+  transactionRef?: string
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
+  createdAt: Timestamp
+  deliveryDate?: string
+  deliveryTime?: string
 }
 

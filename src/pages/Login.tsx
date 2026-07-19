@@ -64,128 +64,129 @@ export default function Login() {
   const toggleLang = () => i18n.changeLanguage(i18n.language === 'en' ? 'am' : 'en')
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Brand / illustration panel */}
-      <div className="relative hidden w-1/2 flex-col overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-800 p-12 text-white lg:flex">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-32 -left-16 h-80 w-80 rounded-full bg-fuchsia-400/20 blur-3xl" />
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-950 via-violet-950 to-slate-950 text-white selection:bg-primary/30">
+      {/* Animated futuristic background elements */}
+      <div className="pointer-events-none absolute -right-24 -top-24 h-[40rem] w-[40rem] rounded-full bg-indigo-500/15 blur-[100px] animate-pulse" />
+      <div className="pointer-events-none absolute -bottom-32 -left-16 h-[50rem] w-[50rem] rounded-full bg-fuchsia-500/15 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[30rem] w-[30rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-[80px]" />
 
-        <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
-            <Store className="h-6 w-6" />
+      {/* Main glass container */}
+      <div className="relative z-10 flex w-full max-w-[1200px] flex-col lg:flex-row overflow-hidden min-h-screen lg:min-h-0 lg:rounded-[2.5rem] lg:bg-white/5 lg:backdrop-blur-3xl lg:shadow-2xl lg:border lg:border-white/10 lg:m-6">
+        
+        {/* Brand / Illustration Panel */}
+        <div className="flex flex-col items-center justify-center p-8 pt-12 lg:w-1/2 lg:p-12 lg:bg-black/20">
+          <div className="flex w-full items-center gap-3 justify-center lg:justify-start mb-8 lg:mb-12">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 shadow-xl">
+              <Store className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold tracking-tight text-white drop-shadow-md">{t('app.name')}</span>
           </div>
-          <span className="text-xl font-bold tracking-tight">{t('app.name')}</span>
+
+          <div className="relative flex flex-1 flex-col items-center justify-center w-full max-w-sm mx-auto">
+            <BakeryArt className="w-[16rem] sm:w-[20rem] lg:w-[24rem] max-w-full drop-shadow-2xl transition-transform duration-700 hover:scale-105 anim-floaty" />
+            <div className="mt-8 space-y-4 text-center">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-white drop-shadow-lg">
+                Freshly baked<br className="hidden sm:block" /> management.
+              </h1>
+              <p className="mx-auto max-w-sm text-sm sm:text-base text-white/80 font-medium">
+                Sales, inventory, production, HR &amp; finance — one modern, chart-rich dashboard.
+              </p>
+            </div>
+          </div>
+          
+          <div className="mt-10 hidden lg:flex w-full justify-center gap-12 text-sm">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">99.9%</p>
+              <p className="text-white/60">Uptime</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">2×</p>
+              <p className="text-white/60">Faster checkout</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">EN · አማ</p>
+              <p className="text-white/60">Bilingual</p>
+            </div>
+          </div>
         </div>
 
-        <div className="relative flex flex-1 flex-col items-center justify-center">
-          <BakeryArt className="w-[24rem] max-w-full drop-shadow-2xl" />
-          <div className="mt-4 space-y-3 text-center">
-            <h1 className="text-4xl font-bold leading-tight">
-              Freshly baked<br />management.
-            </h1>
-            <p className="mx-auto max-w-sm text-white/70">
-              Sales, inventory, production, HR &amp; finance — one modern, chart-rich dashboard.
-            </p>
-          </div>
-        </div>
-
-        <div className="relative flex justify-center gap-10 text-sm">
-          <div className="text-center">
-            <p className="text-2xl font-bold">99.9%</p>
-            <p className="text-white/60">Uptime</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">2×</p>
-            <p className="text-white/60">Faster checkout</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">EN · አማ</p>
-            <p className="text-white/60">Bilingual</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Form panel */}
-      <div className="flex w-full items-center justify-center p-6 lg:w-1/2">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <Store className="h-6 w-6" />
+        {/* Form Panel */}
+        <div className="flex w-full flex-col items-center justify-center p-6 lg:p-12 lg:w-1/2 bg-background/95 lg:bg-background/60 backdrop-blur-2xl rounded-t-[2.5rem] lg:rounded-none shadow-[0_-20px_40px_rgba(0,0,0,0.2)] lg:shadow-none border-t border-white/10 lg:border-t-0 lg:border-l relative z-20 flex-1 lg:flex-none">
+          <div className="w-full max-w-sm mx-auto flex flex-col justify-center h-full text-foreground">
+            <div className="mb-8 mt-2 lg:mt-0">
+              <h2 className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">{t('auth.loginTitle')}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{t('auth.loginSubtitle')}</p>
             </div>
-            <span className="text-lg font-bold">{t('app.name')}</span>
-          </div>
 
-          <h2 className="text-2xl font-bold">{t('auth.loginTitle')}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t('auth.loginSubtitle')}</p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">{t('auth.email')}</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@hussenbakery.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-12 rounded-xl bg-background/50 backdrop-blur-sm transition-all focus:bg-background"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">{t('auth.password')}</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-12 rounded-xl bg-background/50 backdrop-blur-sm transition-all focus:bg-background"
+                  required
+                />
+              </div>
+              {error && <p className="text-sm text-destructive font-medium">{error}</p>}
+              <Button type="submit" className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25 transition-all hover:shadow-primary/40 hover:-translate-y-0.5" disabled={loading}>
+                {loading && !pendingEmail ? t('common.loading') : t('auth.login')}
+              </Button>
+            </form>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">{t('auth.email')}</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@hussenbakery.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11"
-                required
-              />
+            <div className="mt-8">
+              <div className="relative mb-5 text-center">
+                <span className="relative z-10 bg-transparent px-3 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                  {t('auth.demoAccounts')}
+                </span>
+                <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-border/50" />
+              </div>
+              <div className="space-y-3">
+                {DEMO_USERS.map((user) => (
+                  <button
+                    key={user.email}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => handleQuickLogin(user)}
+                    className="group flex w-full items-center gap-4 rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-3.5 text-left transition-all hover:border-primary/50 hover:bg-card/80 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50"
+                  >
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground shadow-sm">
+                      <user.icon className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-card-foreground">{t(`auth.roles.${user.role}`)}</span>
+                      <span className="block truncate text-xs text-muted-foreground/80">{user.email}</span>
+                    </span>
+                    {pendingEmail === user.email ? (
+                      <span className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    ) : (
+                      <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">{t('auth.password')}</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11"
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="h-11 w-full text-base" disabled={loading}>
-              {loading && !pendingEmail ? t('common.loading') : t('auth.login')}
-            </Button>
-          </form>
 
-          <div className="mt-7">
-            <div className="relative mb-3 text-center">
-              <span className="relative z-10 bg-background px-3 text-xs uppercase tracking-wide text-muted-foreground">
-                {t('auth.demoAccounts')}
-              </span>
-              <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-border" />
+            <div className="mt-8 text-center pb-8 lg:pb-0">
+              <Button variant="ghost" size="sm" onClick={toggleLang} className="rounded-full hover:bg-background/60">
+                <Languages className="mr-2 h-4 w-4" />
+                {i18n.language === 'en' ? 'Amharic' : 'English'}
+              </Button>
             </div>
-            <div className="space-y-2">
-              {DEMO_USERS.map((user) => (
-                <button
-                  key={user.email}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleQuickLogin(user)}
-                  className="group flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left transition-all hover:border-primary hover:shadow-card disabled:opacity-60"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                    <user.icon className="h-5 w-5" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold">{t(`auth.roles.${user.role}`)}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
-                  </span>
-                  {pendingEmail === user.email ? (
-                    <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-6 text-center">
-            <Button variant="ghost" size="sm" onClick={toggleLang}>
-              <Languages className="mr-2 h-4 w-4" />
-              {i18n.language === 'en' ? 'Amharic' : 'English'}
-            </Button>
           </div>
         </div>
       </div>

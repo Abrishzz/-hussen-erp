@@ -52,7 +52,7 @@ function StatCard({
           <span className={cn(
             'flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold',
             trend.up ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
-                     : 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400'
+              : 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400'
           )}>
             {trend.up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {trend.text}
@@ -119,10 +119,10 @@ function DashboardContent() {
 
   const topSelling = (() => {
     const counts: Record<string, { name: string; qty: number }> = {}
-    ;(sales || []).forEach((s) => s.items.forEach((i) => {
-      if (!counts[i.productId]) counts[i.productId] = { name: i.name_en, qty: 0 }
-      counts[i.productId].qty += i.quantity
-    }))
+      ; (sales || []).forEach((s) => s.items.forEach((i) => {
+        if (!counts[i.productId]) counts[i.productId] = { name: i.name_en, qty: 0 }
+        counts[i.productId].qty += i.quantity
+      }))
     return Object.values(counts).sort((a, b) => b.qty - a.qty).slice(0, 5)
   })()
 

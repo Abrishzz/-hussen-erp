@@ -19,6 +19,7 @@ import {
   Warehouse,
   Banknote,
   Building2,
+  Clipboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
@@ -36,9 +37,10 @@ const navItems: NavItem[] = [
   { label: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'manager'] },
   { label: 'nav.pos', path: '/pos', icon: ShoppingCart, roles: ['owner', 'cashier'] },
   { label: 'nav.mySales', path: '/my-sales', icon: Receipt, roles: ['owner', 'cashier'] },
+  { label: 'nav.orders', path: '/owner/orders', icon: Clipboard, roles: ['owner'] },
   { label: 'nav.distribution', path: '/distribution', icon: Warehouse, roles: ['owner', 'manager'] },
   { label: 'nav.cashClose', path: '/cash-close', icon: Banknote, roles: ['owner', 'manager', 'cashier'] },
-  { label: 'Products', path: '/products', icon: Grid3X3, roles: ['owner'] },
+  { label: 'nav.products', path: '/products', icon: Grid3X3, roles: ['owner'] },
   { label: 'nav.inventory', path: '/inventory', icon: Package, roles: ['owner', 'staff'] },
   { label: 'nav.production', path: '/production', icon: Factory, roles: ['owner', 'staff', 'manager'] },
   { label: 'nav.hr', path: '/hr', icon: Users, roles: ['owner', 'manager'] },

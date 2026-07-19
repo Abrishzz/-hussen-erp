@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   collection,
@@ -14,6 +15,7 @@ import {
   where,
   orderBy,
   limit,
+  onSnapshot,
   Timestamp,
   type QueryConstraint,
 } from 'firebase/firestore'
@@ -24,7 +26,7 @@ import type {
   Recipe, ProductionBatch, FinishedGood,
   Employee, Attendance, Payroll, Expense, SystemUser,
   Branch, WarehouseStockItem, BranchStockItem, Distribution, DistributionLine,
-  CashClose, CashCloseReturn, CartItem, Loan, HrApproval,
+  CashClose, CashCloseReturn, CartItem, Loan, HrApproval, Order,
 } from '@/types'
 
 export { where, orderBy, limit, Timestamp }
@@ -685,5 +687,41 @@ export function useReviewHrApproval() {
         reviewedAt: Timestamp.now(),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['hrApprovals'] }),
+  })
+}
+
+// ─── Customer Orders (public storefront → owner dashboard) ───
+
+/**
+ * Live feed of customer orders, newest first. Uses onSnapshot so new orders
+ * appear in Order Management the moment a customer places one.
+ */
+export function useOrders() {
+  const [data, setData] = useState<Order[] | undefined>(undefined)
+  const [error, setError] = useState<Error | null>(null)
+  useEffect(() => {
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'))
+    const unsub = onSnapshot(
+      q,
+      (snap) => setData(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Order)),
+      (err) => setError(err),
+    )
+    return unsub
+  }, [])
+  return { data, isLoading: data === undefined && !error, error }
+}
+
+/** Place a customer order (no login required — rules validate the payload). */
+export function useCreateOrder() {
+  return useMutation({
+    mutationFn: (order: Omit<Order, 'id' | 'createdAt'>) =>
+      addDoc(collection(db, 'orders'), { ...order, createdAt: Timestamp.now() }),
+  })
+}
+
+export function useUpdateOrderStatus() {
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: Order['status'] }) =>
+      updateDoc(doc(db, 'orders', id), { status }),
   })
 }

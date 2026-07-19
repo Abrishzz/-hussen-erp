@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Languages, Moon, Sun, Search } from 'lucide-react'
 import { NotificationBell } from './NotificationBell'
+import { nextLanguage, LANGUAGE_LABELS, type AppLanguage } from '@/lib/i18n'
 
 export function Navbar() {
   const { t, i18n } = useTranslation()
@@ -13,9 +14,9 @@ export function Navbar() {
   const { settings, updateSettings } = useSettingsStore()
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'am' : 'en'
+    const newLang = nextLanguage(i18n.language)
     i18n.changeLanguage(newLang)
-    updateSettings({ defaultLanguage: newLang as 'en' | 'am' })
+    updateSettings({ defaultLanguage: newLang })
   }
 
   const toggleDarkMode = () => {
@@ -35,7 +36,13 @@ export function Navbar() {
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-1.5">
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleLanguage} title={t('settings.language')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
+          onClick={toggleLanguage}
+          title={`${t('settings.language')}: ${LANGUAGE_LABELS[i18n.language as AppLanguage] ?? i18n.language}`}
+        >
           <Languages className="h-5 w-5" />
         </Button>
         <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleDarkMode} title={t('settings.darkMode')}>

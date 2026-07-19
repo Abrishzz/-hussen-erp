@@ -21,6 +21,8 @@ import BranchReport from '@/pages/BranchReport'
 import Distribution from '@/pages/Distribution'
 import CashClose from '@/pages/CashClose'
 import Settings from '@/pages/Settings'
+import CustomerOrders from '@/pages/CustomerOrders'
+import OwnerOrders from '@/pages/OwnerOrders'
 import NotFound from '@/pages/NotFound'
 
 const queryClient = new QueryClient({
@@ -36,6 +38,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/order" element={<CustomerOrders />} />
 
       <Route
         element={
@@ -52,6 +55,9 @@ function AppRoutes() {
         } />
         <Route path="/my-sales" element={
           <ProtectedRoute allowedRoles={['owner', 'cashier']}><MySales /></ProtectedRoute>
+        } />
+        <Route path="/owner/orders" element={
+          <ProtectedRoute allowedRoles={['owner']}><OwnerOrders /></ProtectedRoute>
         } />
         <Route path="/products" element={
           <ProtectedRoute allowedRoles={['owner']}><Products /></ProtectedRoute>

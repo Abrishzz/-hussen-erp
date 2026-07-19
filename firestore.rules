@@ -98,9 +98,29 @@ service cloud.firestore {
 
     // === PRODUCTS COLLECTION ===
     match /products/{productId} {
-      // Cashier, Staff & Manager: read only (manager needs it for recipes)
-      allow read: if isCashier() || isStaff() || isManager();
+      // Public read: the customer ordering page shows the menu without login.
+      allow read: if true;
       // Owner: full access (already covered by top-level rule)
+    }
+
+    // === CUSTOMER ORDERS (public storefront) ===
+    match /orders/{orderId} {
+      // Anyone can place an order — but only a well-formed, pending one.
+      allow create: if request.resource.data.status == 'pending'
+        && request.resource.data.customerName is string
+        && request.resource.data.customerName.size() > 0
+        && request.resource.data.customerPhone is string
+        && request.resource.data.customerPhone.size() >= 7
+        && request.resource.data.deliveryAddress is string
+        && request.resource.data.deliveryAddress.size() > 0
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.total is number
+        && request.resource.data.total > 0
+        && request.resource.data.paymentMethod in ['cash', 'telebirr', 'bank'];
+      // Manager can help manage orders; owner has full access via top-level rule.
+      allow read, update: if isManager();
+      allow delete: if false;
     }
 
     // === RAW MATERIALS COLLECTION ===

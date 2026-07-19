@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { useSettingsStore } from '@/store/settingsStore'
 import { useAuthStore } from '@/store/authStore'
+import { LANGUAGES, LANGUAGE_LABELS } from '@/lib/i18n'
 
 export default function Settings() {
   const { t, i18n } = useTranslation()
@@ -58,13 +59,18 @@ export default function Settings() {
             </div>
             <div className="flex items-center justify-between">
               <Label>{t('settings.language')}</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'am' : 'en')}
-              >
-                {i18n.language === 'en' ? t('settings.amharic') : t('settings.english')}
-              </Button>
+              <div className="flex gap-1">
+                {LANGUAGES.map((lng) => (
+                  <Button
+                    key={lng}
+                    variant={i18n.language === lng ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => i18n.changeLanguage(lng)}
+                  >
+                    {LANGUAGE_LABELS[lng]}
+                  </Button>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>

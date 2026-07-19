@@ -114,6 +114,7 @@
   * {
     border-color: var(--border);
   }
+
   body {
     margin: 0;
     background-color: var(--background);
@@ -148,50 +149,130 @@ input[type='number']::-webkit-outer-spin-button {
 
 /* ── Bakery illustration animations ────────────────────────────────────── */
 @keyframes steam {
-  0% { opacity: 0; transform: translateY(4px) scaleX(0.8); }
-  25% { opacity: 0.7; }
-  70% { opacity: 0.35; }
-  100% { opacity: 0; transform: translateY(-26px) scaleX(1.5); }
-}
-@keyframes floaty {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-@keyframes floaty-slow {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-6px) rotate(3deg); }
-}
-@keyframes twinkle {
-  0%, 100% { opacity: 0.2; transform: scale(0.7); }
-  50% { opacity: 1; transform: scale(1.1); }
-}
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scaleX(0.8);
+  }
+
+  25% {
+    opacity: 0.7;
+  }
+
+  70% {
+    opacity: 0.35;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-26px) scaleX(1.5);
+  }
 }
 
-.anim-steam { transform-origin: center bottom; animation: steam 3s ease-in-out infinite; }
-.anim-steam-2 { animation-delay: 1s; }
-.anim-steam-3 { animation-delay: 2s; }
-.anim-floaty { animation: floaty 5s ease-in-out infinite; }
-.anim-floaty-slow { animation: floaty-slow 7s ease-in-out infinite; }
-.anim-twinkle { transform-origin: center; animation: twinkle 2.6s ease-in-out infinite; }
-.anim-spin-slow { transform-origin: center; animation: spin-slow 40s linear infinite; }
+@keyframes floaty {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes floaty-slow {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-6px) rotate(3deg);
+  }
+}
+
+@keyframes twinkle {
+
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.7);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.anim-steam {
+  transform-origin: center bottom;
+  animation: steam 3s ease-in-out infinite;
+}
+
+.anim-steam-2 {
+  animation-delay: 1s;
+}
+
+.anim-steam-3 {
+  animation-delay: 2s;
+}
+
+.anim-floaty {
+  animation: floaty 5s ease-in-out infinite;
+}
+
+.anim-floaty-slow {
+  animation: floaty-slow 7s ease-in-out infinite;
+}
+
+.anim-twinkle {
+  transform-origin: center;
+  animation: twinkle 2.6s ease-in-out infinite;
+}
+
+.anim-spin-slow {
+  transform-origin: center;
+  animation: spin-slow 40s linear infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-steam, .anim-floaty, .anim-floaty-slow, .anim-twinkle, .anim-spin-slow { animation: none; }
+
+  .anim-steam,
+  .anim-floaty,
+  .anim-floaty-slow,
+  .anim-twinkle,
+  .anim-spin-slow {
+    animation: none;
+  }
 }
 
 /* ── Receipt printing ──────────────────────────────────────────────────── */
 @media print {
-  html, body {
+
+  html,
+  body {
     visibility: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
   }
-  #print-receipt, #print-receipt * {
+
+  #print-receipt,
+  #print-receipt * {
     visibility: visible !important;
   }
+
   #print-receipt {
     position: fixed !important;
     inset: 0 !important;
@@ -204,24 +285,66 @@ input[type='number']::-webkit-outer-spin-button {
     line-height: 1.4 !important;
     visibility: visible !important;
   }
-  .pr-center { text-align: center !important; }
-  .pr-shop { font-size: 14px !important; font-weight: 700 !important; }
-  .pr-bold { font-weight: 700 !important; }
+
+  .pr-center {
+    text-align: center !important;
+  }
+
+  .pr-shop {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+
+  .pr-bold {
+    font-weight: 700 !important;
+  }
+
   .pr-rule {
     border-top: 1px dashed #000 !important;
     margin: 1.5mm 0 !important;
   }
+
   .pr-row {
     display: flex !important;
     justify-content: space-between !important;
     gap: 2mm !important;
   }
-  .pr-total { font-weight: 700 !important; font-size: 11px !important; }
-  .pr-table { width: 100% !important; border-collapse: collapse !important; }
-  .pr-table th { font-weight: 600 !important; padding: 0.5mm 0 !important; }
-  .pr-table td { padding: 0.5mm 0 !important; }
-  .pr-left { text-align: left !important; }
-  .pr-right { text-align: right !important; }
-  .pr-thanks { font-size: 11px !important; font-weight: 600 !important; margin-top: 2mm !important; }
-  @page { margin: 0 !important; size: 80mm 200mm !important; }
+
+  .pr-total {
+    font-weight: 700 !important;
+    font-size: 11px !important;
+  }
+
+  .pr-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .pr-table th {
+    font-weight: 600 !important;
+    padding: 0.5mm 0 !important;
+  }
+
+  .pr-table td {
+    padding: 0.5mm 0 !important;
+  }
+
+  .pr-left {
+    text-align: left !important;
+  }
+
+  .pr-right {
+    text-align: right !important;
+  }
+
+  .pr-thanks {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    margin-top: 2mm !important;
+  }
+
+  @page {
+    margin: 0 !important;
+    size: 80mm 200mm !important;
+  }
 }
