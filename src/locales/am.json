@@ -474,7 +474,8 @@
     "exceedsWarehouse": "ጠቅላላው ካለው የመጋዘን ክምችት ይበልጣል",
     "enterQty": "ቢያንስ ለአንድ ቅርንጫፍ ብዛት ያስገቡ",
     "distributedToast": "ወደ ቅርንጫፎች ተሰራጭቷል",
-    "byBranch": "ክምችት በቅርንጫፍ"
+    "byBranch": "ክምችት በቅርንጫፍ",
+    "pickProductHint": "የተያያዘ ምርት የለም — ለማረጋገጥ አንዱን ይምረጡ"
   },
   "cashClose": {
     "title": "የገንዘብ ዝግ",

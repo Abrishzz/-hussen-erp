@@ -57,6 +57,9 @@ export function BatchForm({ open, onOpenChange, batch }: BatchFormProps) {
     try {
       const batchData = {
         recipeId,
+        // Store the product link on the batch itself so it survives even if the
+        // recipe is later deleted — the warehouse confirm depends on this.
+        productId: selectedRecipe?.productId || '',
         productName_en: selectedRecipe?.productName_en || '',
         productName_am: selectedRecipe?.productName_am || '',
         plannedQty: parseInt(plannedQty) || 0,

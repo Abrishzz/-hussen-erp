@@ -474,7 +474,8 @@
     "exceedsWarehouse": "Total exceeds available warehouse stock",
     "enterQty": "Enter a quantity for at least one branch",
     "distributedToast": "Distributed to branches",
-    "byBranch": "Stock by Branch"
+    "byBranch": "Stock by Branch",
+    "pickProductHint": "No linked product — pick one to confirm into"
   },
   "cashClose": {
     "title": "Cash Close",

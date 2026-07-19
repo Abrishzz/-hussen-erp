@@ -474,7 +474,8 @@
     "exceedsWarehouse": "Waliigalli kuusaa jiru caala",
     "enterQty": "Yoo xiqqaate damee tokkoof baay'ina galchi",
     "distributedToast": "Dameewwanitti raabsameera",
-    "byBranch": "Kuusaa Dameedhaan"
+    "byBranch": "Kuusaa Dameedhaan",
+    "pickProductHint": "Oomishni walqabatu hin jiru — mirkaneessuuf tokko filadhu"
   },
   "cashClose": {
     "title": "Cufinsa Kaashii",

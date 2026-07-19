@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   useProductionBatches, useRecipes, useConfirmBatch,
   useWarehouseStock, useActiveBranches, useDistribute, useDistributions,
-  useBranchStock,
+  useBranchStock, useProducts,
 } from '@/hooks/useData'
 import { downloadSpreadsheet } from '@/lib/excel'
 import { Download } from 'lucide-react'
@@ -63,35 +63,48 @@ function ConfirmTab() {
   const { show } = useToast()
   const { data: batches } = useProductionBatches()
   const { data: recipes } = useRecipes()
+  const { data: products } = useProducts()
   const confirmBatch = useConfirmBatch()
   const [busy, setBusy] = useState<string | null>(null)
+  // Manual product choice for orphaned batches (recipe deleted / no product link).
+  const [pick, setPick] = useState<Record<string, string>>({})
 
   const pending = (batches || []).filter((b) => b.status === 'completed' && !b.confirmed)
 
-  const productForBatch = (recipeId: string, productIdOnBatch?: string) => {
-    const r = recipes?.find((x) => x.id === recipeId)
+  /**
+   * Resolve the product a batch's output belongs to, most-reliable first:
+   * the batch's own productId → its recipe's productId → a product whose name
+   * matches → the owner's manual pick. Returns '' when nothing resolves.
+   */
+  const resolveProduct = (b: typeof pending[number]) => {
+    const recipe = recipes?.find((x) => x.id === b.recipeId)
+    const byName = products?.find(
+      (p) => p.name_en.trim().toLowerCase() === (b.productName_en || '').trim().toLowerCase(),
+    )
+    const productId = b.productId || recipe?.productId || byName?.id || pick[b.id] || ''
+    const chosen = products?.find((p) => p.id === productId)
     return {
-      productId: productIdOnBatch || r?.productId || '',
-      name_en: r?.productName_en || '',
-      name_am: r?.productName_am || '',
+      productId,
+      name_en: chosen?.name_en || recipe?.productName_en || b.productName_en || '',
+      name_am: chosen?.name_am || recipe?.productName_am || b.productName_am || '',
+      auto: !!(b.productId || recipe?.productId || byName?.id), // resolved without a manual pick
     }
   }
 
-  const handleConfirm = async (batchId: string, recipeId: string, qty: number, pid?: string, nameEn?: string, nameAm?: string) => {
-    const p = productForBatch(recipeId, pid)
-    const productId = p.productId
-    if (!productId) {
+  const handleConfirm = async (b: typeof pending[number]) => {
+    const p = resolveProduct(b)
+    if (!p.productId) {
       show(t('distribution.noProductLink'), 'destructive')
       return
     }
-    setBusy(batchId)
+    setBusy(b.id)
     try {
       await confirmBatch.mutateAsync({
-        batchId,
-        productId,
-        name_en: p.name_en || nameEn || '',
-        name_am: p.name_am || nameAm || '',
-        qty,
+        batchId: b.id,
+        productId: p.productId,
+        name_en: p.name_en,
+        name_am: p.name_am,
+        qty: b.actualQty,
       })
       show(t('distribution.confirmedToast'), 'success')
     } catch {
@@ -119,20 +132,43 @@ function ConfirmTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pending.map((b) => (
-                  <TableRow key={b.id}>
-                    <TableCell>{formatDate(toDate(b.date))}</TableCell>
-                    <TableCell className="font-medium">{b.productName_en}</TableCell>
-                    <TableCell className="text-right">{b.actualQty}</TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" disabled={busy === b.id || b.actualQty <= 0}
-                        onClick={() => handleConfirm(b.id, b.recipeId, b.actualQty, b.productId, b.productName_en, b.productName_am)}>
-                        <CheckCircle2 className="mr-1 h-4 w-4" />
-                        {busy === b.id ? t('common.saving') : t('distribution.confirm')}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {pending.map((b) => {
+                  const resolved = resolveProduct(b)
+                  return (
+                    <TableRow key={b.id}>
+                      <TableCell>{formatDate(toDate(b.date))}</TableCell>
+                      <TableCell className="font-medium">
+                        {b.productName_en}
+                        {!resolved.auto && (
+                          <span className="mt-0.5 block text-xs font-normal text-amber-600 dark:text-amber-500">
+                            {t('distribution.pickProductHint')}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">{b.actualQty}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Orphaned batch: let the owner pick which product it goes into. */}
+                          {!resolved.auto && (
+                            <Select value={pick[b.id] || ''} onValueChange={(v) => setPick((prev) => ({ ...prev, [b.id]: v }))}>
+                              <SelectTrigger className="h-8 w-40"><SelectValue placeholder={t('distribution.selectProduct')} /></SelectTrigger>
+                              <SelectContent>
+                                {(products || []).map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>{p.name_en}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <Button size="sm" disabled={busy === b.id || b.actualQty <= 0 || !resolved.productId}
+                            onClick={() => handleConfirm(b)}>
+                            <CheckCircle2 className="mr-1 h-4 w-4" />
+                            {busy === b.id ? t('common.saving') : t('distribution.confirm')}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </div>
