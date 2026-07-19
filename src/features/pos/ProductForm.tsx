@@ -1,6 +1,8 @@
-import { useState, useEffect, useId } from 'react'
+import { useState, useEffect, useId, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { now } from '@/lib/timestamp'
+import { compressToProof } from '@/lib/image'
+import { useToast } from '@/hooks/useToast'
 import {
   useAddProduct, useUpdateProduct, useProducts, useWarehouseStock, useSetWarehouseQty,
 } from '@/hooks/useData'
@@ -10,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
+import { ImagePlus, Loader2, X } from 'lucide-react'
 import type { Product } from '@/types'
 
 interface ProductFormProps {
@@ -27,9 +30,12 @@ export function ProductForm({ open, onOpenChange, product }: ProductFormProps) {
   const setWarehouseQty = useSetWarehouseQty()
   const { data: products } = useProducts()
   const { data: warehouse } = useWarehouseStock()
+  const { show } = useToast()
   const listId = useId()
+  const fileRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState(false)
 
   // The dialog stays mounted and only `open` toggles, so useState's initial value
   // is captured once (while product was still null) — that's what made "Edit"
@@ -54,6 +60,21 @@ export function ProductForm({ open, onOpenChange, product }: ProductFormProps) {
   // Offer the categories already in use, but the field stays free text so a new
   // one can just be typed in.
   const categories = [...new Set((products || []).map((p) => p.category).filter(Boolean))]
+
+  const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setPhotoBusy(true)
+    try {
+      const dataUrl = await compressToProof(file)
+      setForm((f) => ({ ...f, imageUrl: dataUrl }))
+    } catch {
+      show(t('products.photoTooLarge'), 'destructive')
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -139,8 +160,37 @@ export function ProductForm({ open, onOpenChange, product }: ProductFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>{t('common.image')} URL</Label>
-              <Input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://..." />
+              <Label>{t('common.image')}</Label>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoFile} />
+              {form.imageUrl ? (
+                <div className="flex items-center gap-3">
+                  <img src={form.imageUrl} alt="" className="h-16 w-16 rounded-lg border object-cover" />
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={photoBusy}>
+                      {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : t('storefront.changeProof')}
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => setForm({ ...form, imageUrl: '' })}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={photoBusy}
+                  className="flex h-24 w-full flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                >
+                  {photoBusy ? <Loader2 className="h-6 w-6 animate-spin" /> : <ImagePlus className="h-6 w-6" />}
+                  <span className="text-sm font-medium">{t('products.imageUpload')}</span>
+                </button>
+              )}
+              <Input
+                value={form.imageUrl.startsWith('data:') ? '' : form.imageUrl}
+                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                placeholder={`${t('products.orUploadPhoto')} — https://...`}
+                disabled={form.imageUrl.startsWith('data:')}
+              />
             </div>
           </div>
 

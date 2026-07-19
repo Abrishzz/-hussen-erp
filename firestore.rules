@@ -123,6 +123,20 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // === CUSTOMER INQUIRIES (public "Contact Us") ===
+    match /inquiries/{inquiryId} {
+      // Anyone can send a message — but only a well-formed, new one.
+      allow create: if request.resource.data.status == 'new'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && (request.resource.data.phone is string || request.resource.data.email is string);
+      // Manager can read/triage; owner has full access via top-level rule.
+      allow read, update: if isManager();
+      allow delete: if false;
+    }
+
     // === RAW MATERIALS COLLECTION ===
     match /rawMaterials/{materialId} {
       allow read: if isStaff() || isCashier() || isManager();

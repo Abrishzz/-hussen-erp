@@ -124,7 +124,12 @@
     "branchesShort": "Damee",
     "warehouseQty": "Baay'ina",
     "warehouseQtyHint": "Baay'ina kuusaa giddugaleessaa keessa jiru, dameewwanitti raabsuuf qophii.",
-    "categoryPlaceholder": "Ramaddii filadhu ykn haaraa barreessi"
+    "categoryPlaceholder": "Ramaddii filadhu ykn haaraa barreessi",
+    "imageUpload": "Suuraa ol kaa'i",
+    "imageUrlLabel": "URL Suuraa",
+    "orUploadPhoto": "ykn suuraa ol kaa'i",
+    "photoTooLarge": "Suuraan baay'ee guddaadha — suuraa xiqqaa yaali",
+    "removePhoto": "Suuraa haqi"
   },
   "pos": {
     "title": "Bakka Gurgurtaa",
@@ -534,7 +539,14 @@
     "bakedFresh": "Haaraa Tolfame",
     "everyMorning": "Ganama hunda",
     "happyCustomers": "Maamiltoota gammadoo 1,200+",
-    "marquee": ["KEEKII HAARAA", "DAABBOO HARKAA", "PAASTIRII", "BUNA", "AJAJA ADDAA", "GEESSUU ARIIFATAA"],
+    "marquee": [
+      "KEEKII HAARAA",
+      "DAABBOO HARKAA",
+      "PAASTIRII",
+      "BUNA",
+      "AJAJA ADDAA",
+      "GEESSUU ARIIFATAA"
+    ],
     "whyKicker": "MAALIIF NAFSI",
     "whyTitle1": "Jaalalaan Tolfame,",
     "whyTitle2": "Boonaan Dhihaate",
@@ -555,9 +567,21 @@
     "reviewsKicker": "YAADOTA",
     "reviewsTitle": "Maamiltoonni Keenya Maal Jedhu",
     "testimonials": [
-      {"name": "Saaraa T.", "text": "Keekiin dhaloota guyyaa ajaa'iba ture — hundi eessaa akka dhufe gaafatan. Geessuunis yeroo sirriitti ture!", "stars": 5},
-      {"name": "Daawit M.", "text": "Ganama hunda daabboo haaraa. Kirosaantiin isaanii dhugumaan dhandhama mana daabboo Paarisii qaba.", "stars": 5},
-      {"name": "Haannaa G.", "text": "Kabaja waajjiraaf onlaayiniin ajajadhe. Ajajni salphaa, paastiriin ho'aa, gareen gammadaa.", "stars": 4}
+      {
+        "name": "Saaraa T.",
+        "text": "Keekiin dhaloota guyyaa ajaa'iba ture — hundi eessaa akka dhufe gaafatan. Geessuunis yeroo sirriitti ture!",
+        "stars": 5
+      },
+      {
+        "name": "Daawit M.",
+        "text": "Ganama hunda daabboo haaraa. Kirosaantiin isaanii dhugumaan dhandhama mana daabboo Paarisii qaba.",
+        "stars": 5
+      },
+      {
+        "name": "Haannaa G.",
+        "text": "Kabaja waajjiraaf onlaayiniin ajajadhe. Ajajni salphaa, paastiriin ho'aa, gareen gammadaa.",
+        "stars": 4
+      }
     ],
     "footerText": "Gammachuu haaraa tolfame, guyyaa guyyaan geeffamu. Keekii, daabboo fi paastirii jaalalaan tolfaman.",
     "visitUs": "Nu Daawwadhaa",
@@ -594,7 +618,27 @@
     "done": "Xumurame",
     "fillRequired": "Maaloo maqaa, bilbilaa fi teessoo geessituu guutaa.",
     "needTxn": "Kaffaltii keessan mirkaneessuuf lakkoofsa gurgurtaa {{method}} keessan galchaa.",
-    "orderFailed": "Dhiifama, ajaja keessan erguun hin danda'amne. Quunnamtii keessan mirkaneeffadhaatii irra deebi'aa yaalaa."
+    "orderFailed": "Dhiifama, ajaja keessan erguun hin danda'amne. Quunnamtii keessan mirkaneeffadhaatii irra deebi'aa yaalaa.",
+    "uploadProof": "Suuraa ragaa kaffaltii ol kaa'i",
+    "proofOptional": "Filannoo — suuraa mirkaneessa kaffaltii keessan maxxansaa.",
+    "proofAdded": "Suuraan maxxanfameera",
+    "changeProof": "Jijjiiri",
+    "removeProof": "Haqi",
+    "proofFailed": "Suuraa hojjechuun hin danda'amne. Suuraa biraa yaali.",
+    "orRefHint": "Lakkoofsa gurgurtaa galchi fi/ykn suuraa maxxansi.",
+    "contactKicker": "NU QUUNNAMAA",
+    "contactTitle": "Gaaffii qabduu? Ajaja Addaa?",
+    "contactSubtitle": "Ergaa nuuf ergaa, dafnee deebii isiniif kennina.",
+    "contactName": "Maqaa keessan *",
+    "contactEmail": "Imeelii",
+    "contactPhone": "Bilbila *",
+    "contactMessage": "Ergaa keessan *",
+    "sendMessage": "Ergaa Ergi",
+    "sending": "Ergaa jira…",
+    "contactSent": "Ergaan Ergameera!",
+    "contactThanks": "Nu quunnamtaniif galatoomaa — dafnee deebii kennina.",
+    "contactFillRequired": "Maaloo maqaa, bilbilaa fi ergaa galchaa.",
+    "contactFailed": "Ergaa keessan erguun hin danda'amne. Maaloo irra deebi'aa yaalaa."
   },
   "orders": {
     "title": "Bulchiinsa Ajajaa",
@@ -631,6 +675,30 @@
       "ready": "Qophii",
       "delivered": "Ga'eera",
       "cancelled": "Haqameera"
-    }
+    },
+    "tabOrders": "Ajajawwan",
+    "tabProducts": "Oomishaalee",
+    "tabInquiries": "Ergaawwan",
+    "viewProof": "Suuraa kaffaltii ilaali",
+    "paymentProof": "Suuraa Kaffaltii",
+    "noProof": "Suuraan hin maxxanfamne",
+    "manageProducts": "Oomishaalee Baafataa",
+    "manageProductsHint": "Oomishaaleen kun fuula ajajaa uummataa irratti mul'atu.",
+    "addProduct": "Oomisha Dabali",
+    "editProduct": "Oomisha Gulaali",
+    "noProducts": "Ammatti oomishni hin jiru. Maamiltoonni akka ajajaniif tokko dabali.",
+    "productHidden": "Dhokfame",
+    "productDeleted": "Oomishni baafata irraa haqameera",
+    "confirmHideProduct": "\"{{name}}\" fuula ajajaa irraa haquu?",
+    "inquiries": "Ergaawwan Maamilaa",
+    "noInquiries": "Ammatti ergaan hin jiru — gaaffiiwwan maamilaa suuqii irraa asitti mul'atu.",
+    "inquiryNew": "Haaraa",
+    "inquiryRead": "Dubbifame",
+    "inquiryResolved": "Furame",
+    "markRead": "Dubbifame Godhi",
+    "markResolved": "Furame Godhi",
+    "reply": "Deebii",
+    "callCustomer": "Bilbili",
+    "newMessages": "{{count}} haaraa"
   }
 }

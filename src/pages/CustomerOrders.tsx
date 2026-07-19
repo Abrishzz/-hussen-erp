@@ -1,12 +1,14 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import { useProducts, useCreateOrder } from '@/hooks/useData'
+import { useProducts, useCreateOrder, useCreateInquiry } from '@/hooks/useData'
 import { formatCurrency } from '@/lib/utils'
+import { compressToProof } from '@/lib/image'
 import { nextLanguage, LANGUAGE_LABELS, type AppLanguage } from '@/lib/i18n'
 import {
   ShoppingBag, X, Plus, Minus, Send, Search, MapPin, Phone, Clock,
   Truck, BadgeCheck, ChefHat, Star, ArrowRight, CakeSlice, Menu as MenuIcon, Languages,
+  ImagePlus, Loader2, MessageSquare, CheckCircle2,
 } from 'lucide-react'
 import type { Product, OrderItem } from '@/types'
 
@@ -107,6 +109,7 @@ export default function CustomerOrders() {
   const { t, i18n } = useTranslation()
   const { data: products } = useProducts()
   const createOrder = useCreateOrder()
+  const createInquiry = useCreateInquiry()
   const [cart, setCart] = useState<OrderItem[]>([])
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
@@ -116,6 +119,13 @@ export default function CustomerOrders() {
   const [category, setCategory] = useState('all')
   const [form, setForm] = useState<CheckoutForm>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
+  const [proof, setProof] = useState<string | null>(null)
+  const [proofBusy, setProofBusy] = useState(false)
+  const proofRef = useRef<HTMLInputElement>(null)
+  // Contact form
+  const [contact, setContact] = useState({ name: '', email: '', phone: '', message: '' })
+  const [contactSending, setContactSending] = useState(false)
+  const [contactSent, setContactSent] = useState(false)
 
   const isAm = i18n.language?.startsWith('am')
   /** Primary/secondary product names by UI language (Oromo falls back to English). */
@@ -177,12 +187,27 @@ export default function CustomerOrders() {
     setCart((prev) => prev.map((i) => i.productId === productId ? { ...i, quantity } : i))
   }
 
+  const handleProofFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setProofBusy(true)
+    try {
+      setProof(await compressToProof(file))
+    } catch {
+      alert(t('storefront.proofFailed'))
+    } finally {
+      setProofBusy(false)
+    }
+  }
+
   const placeOrder = async () => {
     if (!form.customerName || !form.customerPhone || !form.deliveryAddress || cart.length === 0) {
       alert(t('storefront.fillRequired'))
       return
     }
-    if (form.paymentMethod !== 'cash' && !form.transactionRef.trim()) {
+    // Non-cash needs proof of payment: a transaction number, a screenshot, or both.
+    if (form.paymentMethod !== 'cash' && !form.transactionRef.trim() && !proof) {
       alert(t('storefront.needTxn', { method: PAYMENT_ACCOUNTS[form.paymentMethod].label }))
       return
     }
@@ -201,17 +226,42 @@ export default function CustomerOrders() {
         deliveryTime: form.deliveryTime,
         paymentMethod: form.paymentMethod,
         transactionRef: form.transactionRef.trim(),
+        ...(proof ? { paymentProof: proof } : {}),
         notes: form.notes.trim(),
         status: 'pending',
       })
       setOrderPlaced(true)
       setCart([])
       setForm(emptyForm)
+      setProof(null)
     } catch (err) {
       console.error('Order failed:', err)
       alert(t('storefront.orderFailed'))
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const sendInquiry = async () => {
+    if (!contact.name.trim() || !contact.phone.trim() || !contact.message.trim()) {
+      alert(t('storefront.contactFillRequired'))
+      return
+    }
+    setContactSending(true)
+    try {
+      await createInquiry.mutateAsync({
+        name: contact.name.trim(),
+        email: contact.email.trim(),
+        phone: contact.phone.trim(),
+        message: contact.message.trim(),
+      })
+      setContactSent(true)
+      setContact({ name: '', email: '', phone: '', message: '' })
+    } catch (err) {
+      console.error('Inquiry failed:', err)
+      alert(t('storefront.contactFailed'))
+    } finally {
+      setContactSending(false)
     }
   }
 
@@ -647,8 +697,81 @@ export default function CustomerOrders() {
         </div>
       </section>
 
-      {/* ───────────────── Contact / footer ───────────────── */}
-      <footer id="contact" className="text-white" style={{ backgroundColor: C.brown }}>
+      {/* ───────────────── Contact Us form ───────────────── */}
+      <section id="contact" className="py-14 sm:py-16">
+        <div className="mx-auto max-w-3xl px-4">
+          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mb-8 text-center">
+            <p className="text-sm font-semibold tracking-widest" style={{ color: C.caramel }}>{t('storefront.contactKicker')}</p>
+            <h2 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">{t('storefront.contactTitle')}</h2>
+            <p className="mt-2 text-sm opacity-70">{t('storefront.contactSubtitle')}</p>
+          </motion.div>
+
+          <motion.div
+            variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+            className="rounded-3xl p-6 shadow-sm sm:p-8" style={{ backgroundColor: C.creamDark }}
+          >
+            <AnimatePresence mode="wait">
+              {contactSent ? (
+                <motion.div
+                  key="sent"
+                  initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                  className="py-8 text-center"
+                >
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.1 }} className="text-6xl">✅</motion.div>
+                  <h3 className="mt-3 text-xl font-extrabold">{t('storefront.contactSent')}</h3>
+                  <p className="mt-1.5 text-sm opacity-70">{t('storefront.contactThanks')}</p>
+                  <button
+                    onClick={() => setContactSent(false)}
+                    className="mt-5 rounded-full px-6 py-2.5 text-sm font-bold text-white"
+                    style={{ backgroundColor: C.brown }}
+                  >
+                    {t('storefront.sendMessage')}
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <input
+                      type="text" placeholder={t('storefront.contactName')}
+                      value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })}
+                      className="rounded-2xl border-none bg-white px-4 py-3 text-sm shadow-sm outline-none ring-1 ring-black/5 focus:ring-2"
+                    />
+                    <input
+                      type="tel" placeholder={t('storefront.contactPhone')}
+                      value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+                      className="rounded-2xl border-none bg-white px-4 py-3 text-sm shadow-sm outline-none ring-1 ring-black/5 focus:ring-2"
+                    />
+                    <input
+                      type="email" placeholder={t('storefront.contactEmail')}
+                      value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })}
+                      className="rounded-2xl border-none bg-white px-4 py-3 text-sm shadow-sm outline-none ring-1 ring-black/5 focus:ring-2"
+                    />
+                  </div>
+                  <textarea
+                    rows={4} placeholder={t('storefront.contactMessage')}
+                    value={contact.message} onChange={(e) => setContact({ ...contact, message: e.target.value })}
+                    className="w-full rounded-2xl border-none bg-white px-4 py-3 text-sm shadow-sm outline-none ring-1 ring-black/5 focus:ring-2"
+                  />
+                  <motion.button
+                    whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                    disabled={contactSending}
+                    onClick={sendInquiry}
+                    className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 font-bold text-white shadow-lg disabled:opacity-60"
+                    style={{ backgroundColor: C.brown }}
+                  >
+                    {contactSending
+                      ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('storefront.sending')}</>
+                      : <><MessageSquare className="h-4 w-4" /> {t('storefront.sendMessage')}</>}
+                  </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ───────────────── Footer ───────────────── */}
+      <footer className="text-white" style={{ backgroundColor: C.brown }}>
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-3 sm:py-14">
           <div>
             <div className="mb-3 flex items-center gap-2">
@@ -832,7 +955,11 @@ export default function CustomerOrders() {
                     </div>
                     <select
                       value={form.paymentMethod}
-                      onChange={(e) => setForm({ ...form, paymentMethod: e.target.value as CheckoutForm['paymentMethod'] })}
+                      onChange={(e) => {
+                        const pm = e.target.value as CheckoutForm['paymentMethod']
+                        setForm({ ...form, paymentMethod: pm })
+                        if (pm === 'cash') setProof(null)
+                      }}
                       className="w-full rounded-2xl border-none bg-white px-4 py-3 text-sm shadow-sm outline-none ring-1 ring-black/5"
                     >
                       <option value="cash">{t('storefront.payCash')}</option>
@@ -871,6 +998,31 @@ export default function CustomerOrders() {
                               onChange={(e) => setForm({ ...form, transactionRef: e.target.value })}
                               className="w-full rounded-xl border-none bg-white px-4 py-3 font-mono text-sm shadow-sm outline-none ring-1 ring-black/5 focus:ring-2"
                             />
+
+                            {/* Payment screenshot upload (base64) */}
+                            <input ref={proofRef} type="file" accept="image/*" className="hidden" onChange={handleProofFile} />
+                            {proof ? (
+                              <div className="flex items-center gap-3 rounded-xl bg-white p-2.5 shadow-sm">
+                                <img src={proof} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                                <span className="flex flex-1 items-center gap-1.5 text-sm font-semibold" style={{ color: C.brownMid }}>
+                                  <CheckCircle2 className="h-4 w-4" /> {t('storefront.proofAdded')}
+                                </span>
+                                <button type="button" onClick={() => proofRef.current?.click()} className="rounded-lg px-2 py-1 text-xs font-semibold hover:bg-black/5">{t('storefront.changeProof')}</button>
+                                <button type="button" onClick={() => setProof(null)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-500/10"><X className="h-4 w-4" /></button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => proofRef.current?.click()}
+                                disabled={proofBusy}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-semibold shadow-sm ring-1 ring-black/5 transition-colors hover:ring-2"
+                                style={{ color: C.brownMid }}
+                              >
+                                {proofBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                                {t('storefront.uploadProof')}
+                              </button>
+                            )}
+                            <p className="text-[11px] leading-snug opacity-60">{t('storefront.orRefHint')}</p>
                           </div>
                         </motion.div>
                       )}

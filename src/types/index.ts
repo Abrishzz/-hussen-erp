@@ -337,9 +337,22 @@ export interface Order {
   paymentMethod: 'cash' | 'telebirr' | 'bank'
   /** For telebirr/bank: the transaction reference number the customer received when paying. */
   transactionRef?: string
+  /** For telebirr/bank: a compressed Base64 JPEG screenshot of the payment confirmation. */
+  paymentProof?: string
   status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled'
   createdAt: Timestamp
   deliveryDate?: string
   deliveryTime?: string
+}
+
+/** A message submitted from the storefront "Contact Us" form. */
+export interface Inquiry {
+  id: string
+  name: string
+  email: string
+  phone: string
+  message: string
+  status: 'new' | 'read' | 'resolved'
+  createdAt: Timestamp
 }
 

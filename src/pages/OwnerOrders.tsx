@@ -4,27 +4,23 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
-import { useOrders, useUpdateOrderStatus } from '@/hooks/useData'
+import { ProductForm } from '@/features/pos/ProductForm'
+import {
+  useOrders, useUpdateOrderStatus, useProducts, useDeleteProduct,
+  useInquiries, useUpdateInquiryStatus,
+} from '@/hooks/useData'
 import { useToast } from '@/hooks/useToast'
 import { formatCurrency } from '@/lib/utils'
 import { toDate } from '@/lib/timestamp'
 import {
-  Clock,
-  CheckCircle2,
-  Package,
-  Filter,
-  Search,
-  Eye,
-  X,
-  Truck,
-  DollarSign,
-  ShoppingCart,
-  Loader2,
-  Receipt,
-  Copy,
+  Clock, CheckCircle2, Package, Filter, Search, Eye, X, Truck, DollarSign,
+  ShoppingCart, Loader2, Receipt, Copy, Plus, Pencil, Trash2, ClipboardList,
+  MessageSquare, Phone, Mail, ImageIcon,
 } from 'lucide-react'
-import type { Order } from '@/types'
+import type { Order, Inquiry, Product } from '@/types'
 
 const STATUSES: Order['status'][] = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled']
 
@@ -51,8 +47,8 @@ function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label
   )
 }
 
-function formatWhen(order: Order): string {
-  const d = toDate(order.createdAt)
+function formatWhen(ts: Order['createdAt']): string {
+  const d = toDate(ts)
   if (!d) return ''
   return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
@@ -62,6 +58,37 @@ export default function OwnerOrders() {
 }
 
 function OwnerOrdersContent() {
+  const { t } = useTranslation()
+  const { data: inquiries } = useInquiries()
+  const newInquiries = inquiries?.filter((i) => i.status === 'new').length ?? 0
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-xl font-bold sm:text-2xl">{t('orders.title')}</h1>
+
+      <Tabs defaultValue="orders">
+        <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+          <TabsTrigger value="orders" className="gap-1.5"><ClipboardList className="h-4 w-4" /> {t('orders.tabOrders')}</TabsTrigger>
+          <TabsTrigger value="products" className="gap-1.5"><Package className="h-4 w-4" /> {t('orders.tabProducts')}</TabsTrigger>
+          <TabsTrigger value="inquiries" className="gap-1.5">
+            <MessageSquare className="h-4 w-4" /> {t('orders.tabInquiries')}
+            {newInquiries > 0 && (
+              <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground">{newInquiries}</span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="orders" className="mt-6"><OrdersView /></TabsContent>
+        <TabsContent value="products" className="mt-6"><ProductsView /></TabsContent>
+        <TabsContent value="inquiries" className="mt-6"><InquiriesView /></TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+// ─────────────────────────── Orders tab ───────────────────────────
+
+function OrdersView() {
   const { t, i18n } = useTranslation()
   const { data: orders, isLoading, error } = useOrders()
   const updateStatus = useUpdateOrderStatus()
@@ -69,6 +96,7 @@ function OwnerOrdersContent() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<Order['status'] | 'all'>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [proofView, setProofView] = useState<string | null>(null)
 
   const isAm = i18n.language?.startsWith('am')
   const nameOf = (x: { name_en: string; name_am: string }) => (isAm ? x.name_am || x.name_en : x.name_en)
@@ -77,7 +105,6 @@ function OwnerOrdersContent() {
   const methodLabel = (m: Order['paymentMethod']) =>
     m === 'telebirr' ? t('pos.telebirr') : m === 'bank' ? t('pos.bankTransfer') : t('pos.cash')
 
-  // Resolve the selected order from live data so status changes reflect instantly.
   const selectedOrder = useMemo(
     () => (orders ?? []).find((o) => o.id === selectedId) ?? null,
     [orders, selectedId],
@@ -117,12 +144,8 @@ function OwnerOrdersContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold sm:text-2xl">{t('orders.title')}</h1>
-        {isLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-      </div>
+      {isLoading && <div className="flex justify-center py-2"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
 
-      {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={ShoppingCart} label={t('orders.totalOrders')} value={stats.total} />
         <StatCard icon={Clock} label={t('orders.pending')} value={stats.pending} />
@@ -130,7 +153,6 @@ function OwnerOrdersContent() {
         <StatCard icon={DollarSign} label={t('orders.deliveredRevenue')} value={formatCurrency(stats.revenue)} />
       </div>
 
-      {/* Search and Filter */}
       <Card>
         <CardContent className="pt-6">
           <div className="space-y-4">
@@ -146,20 +168,11 @@ function OwnerOrdersContent() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <Button
-                variant={filterStatus === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilterStatus('all')}
-              >
+              <Button variant={filterStatus === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus('all')}>
                 {t('common.all')}
               </Button>
               {STATUSES.map((status) => (
-                <Button
-                  key={status}
-                  variant={filterStatus === status ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setFilterStatus(status)}
-                >
+                <Button key={status} variant={filterStatus === status ? 'default' : 'outline'} size="sm" onClick={() => setFilterStatus(status)}>
                   {statusLabel(status)}
                 </Button>
               ))}
@@ -168,7 +181,6 @@ function OwnerOrdersContent() {
         </CardContent>
       </Card>
 
-      {/* Orders */}
       <div className="space-y-3">
         {error ? (
           <Card><CardContent className="py-12 text-center text-destructive">{t('orders.loadFailed')}: {error.message}</CardContent></Card>
@@ -185,11 +197,7 @@ function OwnerOrdersContent() {
           filteredOrders.map((order) => {
             const StatusIcon = statusConfig[order.status].icon
             return (
-              <Card
-                key={order.id}
-                className="cursor-pointer transition-all hover:shadow-lg"
-                onClick={() => setSelectedId(order.id)}
-              >
+              <Card key={order.id} className="cursor-pointer transition-all hover:shadow-lg" onClick={() => setSelectedId(order.id)}>
                 <CardContent className="pt-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
@@ -199,7 +207,8 @@ function OwnerOrdersContent() {
                           <StatusIcon className="h-3 w-3" />
                           {statusLabel(order.status)}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">{formatWhen(order)}</span>
+                        {order.paymentProof && <Badge variant="outline" className="gap-1"><ImageIcon className="h-3 w-3" /></Badge>}
+                        <span className="text-xs text-muted-foreground">{formatWhen(order.createdAt)}</span>
                       </div>
                       <p className="font-medium">{order.customerName}</p>
                       <p className="text-sm text-muted-foreground">{order.customerPhone}</p>
@@ -209,28 +218,19 @@ function OwnerOrdersContent() {
                             {nameOf(item)} ×{item.quantity}
                           </span>
                         ))}
-                        {order.items.length > 3 && (
-                          <span className="text-xs text-muted-foreground">+{order.items.length - 3}</span>
-                        )}
+                        {order.items.length > 3 && <span className="text-xs text-muted-foreground">+{order.items.length - 3}</span>}
                       </div>
                     </div>
-
                     <div className="flex items-center gap-6">
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">{t('orders.total')}</p>
                         <p className="text-lg font-bold">{formatCurrency(order.total)}</p>
                         <p className="text-xs text-muted-foreground">
                           {methodLabel(order.paymentMethod)}
-                          {order.transactionRef && (
-                            <span className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono">{order.transactionRef}</span>
-                          )}
+                          {order.transactionRef && <span className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono">{order.transactionRef}</span>}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => { e.stopPropagation(); setSelectedId(order.id) }}
-                      >
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedId(order.id) }}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>
@@ -242,29 +242,21 @@ function OwnerOrdersContent() {
         )}
       </div>
 
-      {/* Details Dialog */}
+      {/* Order details */}
       {selectedOrder && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onClick={() => setSelectedId(null)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setSelectedId(null)}>
           <Card className="max-h-[92vh] w-full max-w-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="border-b px-6 py-5 sm:px-8">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold sm:text-2xl">#{selectedOrder.id.slice(0, 6).toUpperCase()}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {selectedOrder.customerName} · {formatWhen(selectedOrder)}
-                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">{selectedOrder.customerName} · {formatWhen(selectedOrder.createdAt)}</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setSelectedId(null)}>
-                  <X className="h-5 w-5" />
-                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setSelectedId(null)}><X className="h-5 w-5" /></Button>
               </div>
             </div>
 
             <CardContent className="space-y-6 py-6">
-              {/* Payment verification — the key panel for telebirr/bank orders */}
               {selectedOrder.paymentMethod !== 'cash' ? (
                 <div className="rounded-lg border border-amber-300/60 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
                   <div className="flex items-center gap-2">
@@ -284,11 +276,23 @@ function OwnerOrdersContent() {
                       <span className="text-sm font-semibold text-destructive">{t('orders.notProvided')}</span>
                     )}
                   </div>
+                  {/* Payment screenshot */}
+                  <div className="mt-3">
+                    {selectedOrder.paymentProof ? (
+                      <button
+                        type="button"
+                        onClick={() => setProofView(selectedOrder.paymentProof!)}
+                        className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
+                      >
+                        <img src={selectedOrder.paymentProof} alt="" className="h-9 w-9 rounded object-cover" />
+                        {t('orders.viewProof')}
+                      </button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">{t('orders.noProof')}</p>
+                    )}
+                  </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {t('orders.verifyHint', {
-                      method: methodLabel(selectedOrder.paymentMethod),
-                      amount: formatCurrency(selectedOrder.total),
-                    })}
+                    {t('orders.verifyHint', { method: methodLabel(selectedOrder.paymentMethod), amount: formatCurrency(selectedOrder.total) })}
                   </p>
                 </div>
               ) : (
@@ -298,34 +302,17 @@ function OwnerOrdersContent() {
                 </div>
               )}
 
-              {/* Customer Info */}
               <div>
                 <p className="mb-3 text-sm font-semibold">{t('orders.customerInfo')}</p>
                 <div className="grid grid-cols-2 gap-4 rounded-lg bg-muted/50 p-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t('common.phone')}</p>
-                    <p className="text-sm font-medium">{selectedOrder.customerPhone}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t('common.email')}</p>
-                    <p className="text-sm font-medium">{selectedOrder.customerEmail || '—'}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground">{t('orders.deliveryAddress')}</p>
-                    <p className="text-sm font-medium">{selectedOrder.deliveryAddress}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t('orders.deliveryDate')}</p>
-                    <p className="text-sm font-medium">{selectedOrder.deliveryDate || t('orders.asap')}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t('orders.deliveryTime')}</p>
-                    <p className="text-sm font-medium">{selectedOrder.deliveryTime || '—'}</p>
-                  </div>
+                  <div><p className="text-xs text-muted-foreground">{t('common.phone')}</p><p className="text-sm font-medium">{selectedOrder.customerPhone}</p></div>
+                  <div><p className="text-xs text-muted-foreground">{t('common.email')}</p><p className="text-sm font-medium">{selectedOrder.customerEmail || '—'}</p></div>
+                  <div className="col-span-2"><p className="text-xs text-muted-foreground">{t('orders.deliveryAddress')}</p><p className="text-sm font-medium">{selectedOrder.deliveryAddress}</p></div>
+                  <div><p className="text-xs text-muted-foreground">{t('orders.deliveryDate')}</p><p className="text-sm font-medium">{selectedOrder.deliveryDate || t('orders.asap')}</p></div>
+                  <div><p className="text-xs text-muted-foreground">{t('orders.deliveryTime')}</p><p className="text-sm font-medium">{selectedOrder.deliveryTime || '—'}</p></div>
                 </div>
               </div>
 
-              {/* Items */}
               <div>
                 <p className="mb-3 text-sm font-semibold">{t('orders.orderItems')}</p>
                 <div className="space-y-2">
@@ -347,22 +334,12 @@ function OwnerOrdersContent() {
                 </div>
               </div>
 
-              {/* Summary */}
               <div className="space-y-2 rounded-lg bg-muted/50 p-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t('common.subtotal')}</span>
-                  <span className="font-medium">{formatCurrency(selectedOrder.subtotal)}</span>
-                </div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('common.subtotal')}</span><span className="font-medium">{formatCurrency(selectedOrder.subtotal)}</span></div>
                 {selectedOrder.discount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t('common.discount')}</span>
-                    <span className="font-medium">-{formatCurrency(selectedOrder.discount)}</span>
-                  </div>
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t('common.discount')}</span><span className="font-medium">-{formatCurrency(selectedOrder.discount)}</span></div>
                 )}
-                <div className="flex justify-between border-t pt-2">
-                  <span className="font-semibold">{t('common.total')}</span>
-                  <span className="text-lg font-bold">{formatCurrency(selectedOrder.total)}</span>
-                </div>
+                <div className="flex justify-between border-t pt-2"><span className="font-semibold">{t('common.total')}</span><span className="text-lg font-bold">{formatCurrency(selectedOrder.total)}</span></div>
               </div>
 
               {selectedOrder.notes && (
@@ -373,7 +350,6 @@ function OwnerOrdersContent() {
               )}
             </CardContent>
 
-            {/* Status Actions */}
             <div className="border-t px-6 py-5 sm:px-8">
               <p className="mb-3 text-xs text-muted-foreground">{t('orders.updateStatus')}</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -397,6 +373,175 @@ function OwnerOrdersContent() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* Fullscreen proof viewer */}
+      {proofView && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4" onClick={() => setProofView(null)}>
+          <button className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white" onClick={() => setProofView(null)}><X className="h-6 w-6" /></button>
+          <img src={proofView} alt={t('orders.paymentProof')} className="max-h-[85vh] w-auto rounded-xl" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────── Products tab ───────────────────────────
+
+function ProductsView() {
+  const { t, i18n } = useTranslation()
+  const { data: products, isLoading } = useProducts()
+  const deleteProduct = useDeleteProduct()
+  const { show } = useToast()
+  const [formOpen, setFormOpen] = useState(false)
+  const [editProduct, setEditProduct] = useState<Product | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
+
+  const isAm = i18n.language?.startsWith('am')
+  const nameOf = (p: Product) => (isAm ? p.name_am || p.name_en : p.name_en)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-bold">{t('orders.manageProducts')}</h2>
+          <p className="text-sm text-muted-foreground">{t('orders.manageProductsHint')}</p>
+        </div>
+        <Button size="sm" onClick={() => { setEditProduct(null); setFormOpen(true) }}>
+          <Plus className="mr-2 h-4 w-4" /> {t('orders.addProduct')}
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : (products?.length ?? 0) === 0 ? (
+        <Card><CardContent className="py-16 text-center">
+          <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
+          <p className="text-muted-foreground">{t('orders.noProducts')}</p>
+        </CardContent></Card>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {products!.map((p) => (
+            <Card key={p.id} className="overflow-hidden">
+              <div className="relative flex h-32 items-center justify-center bg-muted">
+                {p.imageUrl
+                  ? <img src={p.imageUrl} alt={nameOf(p)} className="h-full w-full object-cover" />
+                  : <span className="text-4xl">🧁</span>}
+                {p.category && <Badge variant="secondary" className="absolute left-2 top-2 capitalize">{p.category}</Badge>}
+              </div>
+              <CardContent className="space-y-2 pt-3">
+                <div>
+                  <p className={`truncate text-sm font-bold ${isAm ? 'font-ethiopic' : ''}`}>{nameOf(p)}</p>
+                  <p className="text-sm font-extrabold text-primary">{formatCurrency(p.price)}</p>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { setEditProduct(p); setFormOpen(true) }}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1 text-destructive" onClick={() => setDeleteTarget(p)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <ProductForm open={formOpen} onOpenChange={(o) => { setFormOpen(o); if (!o) setEditProduct(null) }} product={editProduct} />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}
+        title={t('common.delete')}
+        description={deleteTarget ? t('orders.confirmHideProduct', { name: deleteTarget.name_en }) : ''}
+        variant="destructive"
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          if (!deleteTarget) return
+          deleteProduct.mutate(deleteTarget.id, {
+            onSuccess: () => show(t('orders.productDeleted'), 'success'),
+          })
+          setDeleteTarget(null)
+        }}
+      />
+    </div>
+  )
+}
+
+// ─────────────────────────── Inquiries tab ───────────────────────────
+
+const inquiryBadge: Record<Inquiry['status'], 'default' | 'secondary' | 'outline'> = {
+  new: 'default', read: 'secondary', resolved: 'outline',
+}
+
+function InquiriesView() {
+  const { t } = useTranslation()
+  const { data: inquiries, isLoading } = useInquiries()
+  const updateInquiry = useUpdateInquiryStatus()
+
+  const label = (s: Inquiry['status']) => t(`orders.inquiry${s.charAt(0).toUpperCase() + s.slice(1)}`)
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-bold">{t('orders.inquiries')}</h2>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : (inquiries?.length ?? 0) === 0 ? (
+        <Card><CardContent className="py-16 text-center">
+          <MessageSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
+          <p className="text-muted-foreground">{t('orders.noInquiries')}</p>
+        </CardContent></Card>
+      ) : (
+        inquiries!.map((inq) => (
+          <Card key={inq.id} className={inq.status === 'new' ? 'border-primary/40' : ''}>
+            <CardContent className="pt-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <h3 className="font-bold">{inq.name}</h3>
+                    <Badge variant={inquiryBadge[inq.status]}>{label(inq.status)}</Badge>
+                    <span className="text-xs text-muted-foreground">{formatWhen(inq.createdAt)}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    {inq.phone && <a href={`tel:${inq.phone}`} className="flex items-center gap-1 hover:text-foreground"><Phone className="h-3 w-3" /> {inq.phone}</a>}
+                    {inq.email && <a href={`mailto:${inq.email}`} className="flex items-center gap-1 hover:text-foreground"><Mail className="h-3 w-3" /> {inq.email}</a>}
+                  </div>
+                  <p className="mt-2 whitespace-pre-wrap text-sm">{inq.message}</p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  {inq.phone && (
+                    <Button asChild variant="outline" size="sm">
+                      <a href={`tel:${inq.phone}`}><Phone className="mr-1 h-3.5 w-3.5" /> {t('orders.callCustomer')}</a>
+                    </Button>
+                  )}
+                  {inq.status !== 'resolved' && (
+                    <Button
+                      variant="default" size="sm"
+                      disabled={updateInquiry.isPending}
+                      onClick={() => updateInquiry.mutate({ id: inq.id, status: 'resolved' })}
+                    >
+                      <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> {t('orders.markResolved')}
+                    </Button>
+                  )}
+                  {inq.status === 'new' && (
+                    <Button
+                      variant="outline" size="sm"
+                      disabled={updateInquiry.isPending}
+                      onClick={() => updateInquiry.mutate({ id: inq.id, status: 'read' })}
+                    >
+                      {t('orders.markRead')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))
       )}
     </div>
   )

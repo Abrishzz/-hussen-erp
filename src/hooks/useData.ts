@@ -26,7 +26,7 @@ import type {
   Recipe, ProductionBatch, FinishedGood,
   Employee, Attendance, Payroll, Expense, SystemUser,
   Branch, WarehouseStockItem, BranchStockItem, Distribution, DistributionLine,
-  CashClose, CashCloseReturn, CartItem, Loan, HrApproval, Order,
+  CashClose, CashCloseReturn, CartItem, Loan, HrApproval, Order, Inquiry,
 } from '@/types'
 
 export { where, orderBy, limit, Timestamp }
@@ -723,5 +723,44 @@ export function useUpdateOrderStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: Order['status'] }) =>
       updateDoc(doc(db, 'orders', id), { status }),
+  })
+}
+
+// ─── Customer Inquiries (storefront "Contact Us" → owner dashboard) ───
+
+/** Live feed of contact-form inquiries, newest first. */
+export function useInquiries() {
+  const [data, setData] = useState<Inquiry[] | undefined>(undefined)
+  const [error, setError] = useState<Error | null>(null)
+  useEffect(() => {
+    const q = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'))
+    const unsub = onSnapshot(
+      q,
+      (snap) => setData(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Inquiry)),
+      (err) => setError(err),
+    )
+    return unsub
+  }, [])
+  return { data, isLoading: data === undefined && !error, error }
+}
+
+/** Submit a contact inquiry (no login required — rules validate the payload). */
+export function useCreateInquiry() {
+  return useMutation({
+    mutationFn: (inquiry: Omit<Inquiry, 'id' | 'createdAt' | 'status'>) =>
+      addDoc(collection(db, 'inquiries'), { ...inquiry, status: 'new', createdAt: Timestamp.now() }),
+  })
+}
+
+export function useUpdateInquiryStatus() {
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: Inquiry['status'] }) =>
+      updateDoc(doc(db, 'inquiries', id), { status }),
+  })
+}
+
+export function useDeleteInquiry() {
+  return useMutation({
+    mutationFn: (id: string) => deleteDoc(doc(db, 'inquiries', id)),
   })
 }
