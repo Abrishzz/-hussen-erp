@@ -239,6 +239,11 @@ export interface Attendance {
   status: 'present' | 'absent' | 'late' | 'half-day'
 }
 
+/**
+ * A spend recorded against a day's takings. Managers submit expenses as
+ * `pending`; the owner approves or rejects. Only `approved` expenses are
+ * deducted from that day's sales total.
+ */
 export interface Expense {
   id: string
   category: string
@@ -246,6 +251,12 @@ export interface Expense {
   description: string
   date: Timestamp
   recordedBy: string
+  status: 'pending' | 'approved' | 'rejected'
+  submittedByName?: string
+  reviewedBy?: string
+  reviewedByName?: string
+  reviewedAt?: Timestamp
+  note?: string
 }
 
 export interface Payroll {

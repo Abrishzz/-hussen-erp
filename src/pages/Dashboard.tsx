@@ -7,9 +7,13 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import {
   useTodaySales, useRawMaterials, useProductionBatches, useSales, useUsers, useActiveBranches,
+  useExpenses,
 } from '@/hooks/useData'
 import { cn, formatCurrency } from '@/lib/utils'
-import { filterSalesByRange, salesByDay, paymentBreakdown, branchPerformance, toDate } from '@/lib/analytics'
+import {
+  filterSalesByRange, salesByDay, paymentBreakdown, branchPerformance, toDate,
+  approvedExpensesOn,
+} from '@/lib/analytics'
 import { StaffPerformanceView } from '@/features/reports/StaffPerformanceView'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -80,6 +84,7 @@ function DashboardContent() {
   const { data: allSales } = useSales()
   const { data: users } = useUsers()
   const { data: branches } = useActiveBranches()
+  const { data: expenses } = useExpenses()
 
   const today = new Date().toISOString().split('T')[0]
   const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
@@ -88,6 +93,9 @@ function DashboardContent() {
 
   const todaySalesTotal = sales?.reduce((s, x) => s + x.total, 0) || 0
   const todaySalesCount = sales?.length || 0
+  // Approved expenses come straight off the day's takings.
+  const deductedToday = approvedExpensesOn(expenses, today)
+  const todayNetSales = todaySalesTotal - deductedToday
   const lowStockCount = materials?.filter((m) => m.currentQty <= m.reorderLevel).length || 0
   const todayBatches = batches?.filter((b) => toDate(b.date).toDateString() === new Date().toDateString()) || []
 
@@ -157,7 +165,10 @@ function DashboardContent() {
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard chip="emerald" icon={DollarSign} label={t('dashboard.todaySales')}
-          value={formatCurrency(todaySalesTotal)} sub={`${todaySalesCount} ${t('pos.orderCount')}`} />
+          value={formatCurrency(todayNetSales)}
+          sub={deductedToday > 0
+            ? `${formatCurrency(todaySalesTotal)} − ${formatCurrency(deductedToday)} ${t('finance.expenses').toLowerCase()}`
+            : `${todaySalesCount} ${t('pos.orderCount')}`} />
         <StatCard chip="blue" icon={ShoppingCart} label={t('dashboard.todayOrders')}
           value={todaySalesCount} sub={t('pos.orderCount')} />
         <StatCard chip="amber" icon={AlertTriangle} label={t('dashboard.lowStockAlerts')}

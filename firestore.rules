@@ -190,8 +190,21 @@ service cloud.firestore {
 
     // === EXPENSES COLLECTION ===
     match /expenses/{expId} {
-      allow read: if isOwner();
-      allow write: if isOwner();
+      allow read: if isOwner() || isManager();
+      // A manager may submit an expense, but only as 'pending' — approving is
+      // the owner's call (owner writes are granted by the top-level rule).
+      allow create: if isManager()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.recordedBy == request.auth.uid;
+      // A manager may only edit/withdraw their own submission while it is still
+      // pending, and can never flip it to approved/rejected themselves.
+      allow update: if isManager()
+        && resource.data.recordedBy == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'pending';
+      allow delete: if isManager()
+        && resource.data.recordedBy == request.auth.uid
+        && resource.data.status == 'pending';
     }
 
     // === PAYROLL COLLECTION ===

@@ -391,12 +391,41 @@ export function useExpenses(constraints: QueryConstraint[] = []) {
   return useCollection<Expense>('expenses', constraints.length ? constraints : [orderBy('date', 'desc')])
 }
 
+/**
+ * Records an expense. The owner is the approver, so anything they add is
+ * approved outright; a manager's submission starts as `pending`.
+ */
 export function useAddExpense() {
+  const qc = useQueryClient()
+  const { user, role } = useAuthStore()
+  return useMutation({
+    mutationFn: (data: Omit<Expense, 'id' | 'recordedBy' | 'status'>) =>
+      addDoc(collection(db, 'expenses'), {
+        ...data,
+        recordedBy: user?.uid || '',
+        submittedByName: user?.displayName || '',
+        status: role === 'owner' ? 'approved' : 'pending',
+        ...(role === 'owner'
+          ? { reviewedBy: user?.uid || '', reviewedByName: user?.displayName || '', reviewedAt: Timestamp.now() }
+          : {}),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }),
+  })
+}
+
+/** Owner approves or rejects a manager's expense submission. */
+export function useReviewExpense() {
   const qc = useQueryClient()
   const { user } = useAuthStore()
   return useMutation({
-    mutationFn: (data: Omit<Expense, 'id' | 'recordedBy'>) =>
-      addDoc(collection(db, 'expenses'), { ...data, recordedBy: user?.uid }),
+    mutationFn: ({ id, status, note }: { id: string; status: 'approved' | 'rejected'; note?: string }) =>
+      updateDoc(doc(db, 'expenses', id), {
+        status,
+        note: note || '',
+        reviewedBy: user?.uid || '',
+        reviewedByName: user?.displayName || '',
+        reviewedAt: Timestamp.now(),
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }),
   })
 }

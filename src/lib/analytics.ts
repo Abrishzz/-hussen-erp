@@ -1,4 +1,4 @@
-import type { Sale, SystemUser } from '@/types'
+import type { Sale, SystemUser, Expense } from '@/types'
 
 /** Coerce a Firestore Timestamp / {seconds} / Date / ISO string into a JS Date. */
 export function toDate(value: unknown): Date {
@@ -19,6 +19,41 @@ export function filterSalesByRange(sales: Sale[] | undefined, from: string, to: 
     const d = toDate(s.timestamp)
     return d >= start && d <= end
   })
+}
+
+/**
+ * Only approved expenses count against takings — pending/rejected never do.
+ * Rows with no status predate the approval flow (they could only be created by
+ * the owner back then), so they are treated as already approved.
+ */
+export function approvedExpenses(expenses: Expense[] | undefined): Expense[] {
+  return (expenses || []).filter((e) => !e.status || e.status === 'approved')
+}
+
+/**
+ * Total approved expenses falling on a single day (`yyyy-mm-dd`). This is the
+ * amount deducted from that day's sales.
+ */
+export function approvedExpensesOn(expenses: Expense[] | undefined, day: string): number {
+  return approvedExpenses(expenses)
+    .filter((e) => toDate(e.date).toISOString().split('T')[0] === day)
+    .reduce((sum, e) => sum + e.amount, 0)
+}
+
+/** Total approved expenses within an inclusive `yyyy-mm-dd` range. */
+export function approvedExpensesInRange(
+  expenses: Expense[] | undefined,
+  from: string,
+  to: string
+): number {
+  const start = new Date(from)
+  const end = new Date(to + 'T23:59:59')
+  return approvedExpenses(expenses)
+    .filter((e) => {
+      const d = toDate(e.date)
+      return d >= start && d <= end
+    })
+    .reduce((sum, e) => sum + e.amount, 0)
 }
 
 export interface StaffPerformanceRow {
