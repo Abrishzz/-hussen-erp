@@ -6,24 +6,8 @@ import { auth } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Store, Languages, ShieldCheck, ShoppingCart, ChefHat, Warehouse, ChevronRight } from 'lucide-react'
-import { roleHome } from '@/components/auth/ProtectedRoute'
+import { Store, Languages } from 'lucide-react'
 import { BakeryArt } from '@/components/BakeryArt'
-import type { UserRole } from '@/types'
-
-interface DemoUser {
-  email: string
-  role: UserRole
-  icon: React.ElementType
-}
-
-const DEMO_PASSWORD = 'password123'
-const DEMO_USERS: DemoUser[] = [
-  { email: 'owner@hussenbakery.com', role: 'owner', icon: ShieldCheck },
-  { email: 'manager@hussenbakery.com', role: 'manager', icon: Warehouse },
-  { email: 'cashier@hussenbakery.com', role: 'cashier', icon: ShoppingCart },
-  { email: 'staff@hussenbakery.com', role: 'staff', icon: ChefHat },
-]
 
 export default function Login() {
   const { t, i18n } = useTranslation()
@@ -33,7 +17,6 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname
 
@@ -47,18 +30,12 @@ export default function Login() {
       setError(t('auth.invalidCredentials'))
     } finally {
       setLoading(false)
-      setPendingEmail(null)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     await signIn(email, password)
-  }
-
-  const handleQuickLogin = async (user: DemoUser) => {
-    setPendingEmail(user.email)
-    await signIn(user.email, DEMO_PASSWORD, roleHome(user.role))
   }
 
   const toggleLang = () => i18n.changeLanguage(i18n.language === 'en' ? 'am' : 'en')
@@ -144,42 +121,9 @@ export default function Login() {
               </div>
               {error && <p className="text-sm text-destructive font-medium">{error}</p>}
               <Button type="submit" className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25 transition-all hover:shadow-primary/40 hover:-translate-y-0.5" disabled={loading}>
-                {loading && !pendingEmail ? t('common.loading') : t('auth.login')}
+                {loading ? t('common.loading') : t('auth.login')}
               </Button>
             </form>
-
-            <div className="mt-8">
-              <div className="relative mb-5 text-center">
-                <span className="relative z-10 bg-transparent px-3 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                  {t('auth.demoAccounts')}
-                </span>
-                <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-border/50" />
-              </div>
-              <div className="space-y-3">
-                {DEMO_USERS.map((user) => (
-                  <button
-                    key={user.email}
-                    type="button"
-                    disabled={loading}
-                    onClick={() => handleQuickLogin(user)}
-                    className="group flex w-full items-center gap-4 rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm p-3.5 text-left transition-all hover:border-primary/50 hover:bg-card/80 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50"
-                  >
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground shadow-sm">
-                      <user.icon className="h-5 w-5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-card-foreground">{t(`auth.roles.${user.role}`)}</span>
-                      <span className="block truncate text-xs text-muted-foreground/80">{user.email}</span>
-                    </span>
-                    {pendingEmail === user.email ? (
-                      <span className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    ) : (
-                      <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             <div className="mt-8 text-center pb-8 lg:pb-0">
               <Button variant="ghost" size="sm" onClick={toggleLang} className="rounded-full hover:bg-background/60">
