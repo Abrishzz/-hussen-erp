@@ -194,7 +194,9 @@
     "proofHint": "Suuraa mirkaneessa dabarsaa",
     "retakePhoto": "Irra deebi'ii kaasi",
     "proofFailed": "Suuraa hojjechuun hin danda'amne",
-    "viewProof": "Ragaa ilaali"
+    "viewProof": "Ragaa ilaali",
+    "dayClosedTitle": "Guyyaan damee kanaa cufameera",
+    "dayClosedDesc": "Kuusaan hin gurguramne kuusaatti deebi'eera, kaashiinis dabarfameera. Hoji-gaggeessaan yeroo kuusaa irra deebi'ee raabsu gurgurtaan ni banama."
   },
   "inventory": {
     "title": "Kuusaa Meeshaalee Dheedhii",
@@ -528,7 +530,8 @@
       "confirmed": "Mirkanaa'e"
     },
     "byBranch": "Kaashii Dameedhaan",
-    "notClosed": "Hin cufamne"
+    "notClosed": "Hin cufamne",
+    "returned": "Kan deebi'e"
   },
   "notifications": {
     "allClear": "Hundi xumurameera",
@@ -541,7 +544,13 @@
     "dayNotClosedDesc": "Har'a ajaja {{count}} — kaashii dabarsuuf guyyaa cufi.",
     "newOrdersTitle": "Ajajni onlaayinii haaraa {{count}}",
     "newMessagesTitle": "Ergaan maamilaa haaraa {{count}}",
-    "pendingExpensesTitle": "Baasiin {{count}} mirkaneessa eegaa jira"
+    "pendingExpensesTitle": "Baasiin {{count}} mirkaneessa eegaa jira",
+    "viewAll": "Beeksisa hunda ilaali",
+    "pageSubtitle": "Wanti amma xiyyeeffannoo barbaadu hunda",
+    "pendingHrTitle": "Gaaffiin HR {{count}} mirkaneessa eegaa jira",
+    "salesTodayTitle": "Har'a gurgurtaa {{count}}",
+    "salesTodayDesc": "Hanga ammaatti ETB {{amount}} walitti qabame",
+    "branchesOpenTitle": "Dameewwan {{count}} kaashii hin cufne"
   },
   "branchReport": {
     "title": "Gabaasa Damee",

@@ -164,6 +164,10 @@ function CashierClose() {
 function ManagerConfirm() {
   const { t } = useTranslation()
   const { show } = useToast()
+  const { role } = useAuthStore()
+  // Cash close is a same-day routine. A manager only ever sees today; days that
+  // were left unclosed become the owner's problem to review.
+  const isSuperAdmin = role === 'owner'
   const { data: closes, isLoading } = useCashCloses()
   const { data: branches } = useActiveBranches()
   const { data: sales } = useSales()
@@ -172,8 +176,12 @@ function ManagerConfirm() {
   const today = new Date().toISOString().split('T')[0]
   const [day, setDay] = useState(today)
 
-  const submitted = (closes || []).filter((c) => c.status === 'submitted')
-  const confirmed = (closes || []).filter((c) => c.status === 'confirmed')
+  const submitted = (closes || [])
+    .filter((c) => c.status === 'submitted')
+    .filter((c) => isSuperAdmin || c.date === today)
+  const confirmed = (closes || [])
+    .filter((c) => c.status === 'confirmed')
+    .filter((c) => isSuperAdmin || c.date === today)
 
   // Every branch's takings for the chosen day, computed from the sales
   // themselves — so a branch shows up here whether or not it has closed yet.
@@ -210,6 +218,21 @@ function ManagerConfirm() {
       <TableCell>{c.cashierName}</TableCell>
       <TableCell className="text-right">{c.orderCount}</TableCell>
       <TableCell className="text-right font-medium">{formatCurrency(c.totalSales)}</TableCell>
+      {/* The unsold goods that came back with the cash — the manager checks
+          these physically before confirming. */}
+      <TableCell>
+        {(c.returnedItems || []).length === 0 ? (
+          <span className="text-xs text-muted-foreground">—</span>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {(c.returnedItems || []).map((r) => (
+              <Badge key={r.productId} variant="secondary" className="text-[11px]">
+                {r.name_en}: {r.qty}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </TableCell>
       <TableCell className="text-right">
         {showAction ? (
           <Button size="sm" disabled={busy === c.id} onClick={() => handleConfirm(c.id)}>
@@ -237,7 +260,13 @@ function ManagerConfirm() {
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base sm:text-lg">{t('cashClose.byBranch')}</CardTitle>
           <div className="flex items-center gap-2">
-            <Input type="date" value={day} max={today} onChange={(e) => setDay(e.target.value)} className="h-9 w-40" />
+            <Input
+              type="date" value={day} max={today}
+              min={isSuperAdmin ? undefined : today}
+              disabled={!isSuperAdmin}
+              onChange={(e) => setDay(e.target.value)}
+              className="h-9 w-40"
+            />
             <Button size="sm" variant="outline" disabled={perBranch.length === 0}
               onClick={() => downloadSpreadsheet(
                 `cash-close-${day}`,
@@ -312,6 +341,7 @@ function ManagerConfirm() {
                     <TableHead>{t('cashClose.cashier')}</TableHead>
                     <TableHead className="text-right">{t('pos.orderCount')}</TableHead>
                     <TableHead className="text-right">{t('common.total')}</TableHead>
+                    <TableHead>{t('cashClose.returned')}</TableHead>
                     <TableHead className="text-right">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -335,6 +365,7 @@ function ManagerConfirm() {
                     <TableHead>{t('cashClose.cashier')}</TableHead>
                     <TableHead className="text-right">{t('pos.orderCount')}</TableHead>
                     <TableHead className="text-right">{t('common.total')}</TableHead>
+                    <TableHead>{t('cashClose.returned')}</TableHead>
                     <TableHead className="text-right">{t('cashClose.confirmedBy')}</TableHead>
                   </TableRow>
                 </TableHeader>

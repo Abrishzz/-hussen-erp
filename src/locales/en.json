@@ -194,7 +194,9 @@
     "proofHint": "Screenshot of the transfer confirmation",
     "retakePhoto": "Retake",
     "proofFailed": "Could not process the image",
-    "viewProof": "View proof"
+    "viewProof": "View proof",
+    "dayClosedTitle": "Day closed for this branch",
+    "dayClosedDesc": "Unsold stock has been returned to the warehouse and the cash handed over. Selling reopens once the manager distributes stock again."
   },
   "inventory": {
     "title": "Raw Materials Inventory",
@@ -528,7 +530,8 @@
       "confirmed": "Confirmed"
     },
     "byBranch": "Cash by Branch",
-    "notClosed": "Not closed"
+    "notClosed": "Not closed",
+    "returned": "Returned"
   },
   "notifications": {
     "allClear": "You're all caught up",
@@ -541,7 +544,13 @@
     "dayNotClosedDesc": "{{count}} order(s) today — close the day to hand over cash.",
     "newOrdersTitle": "{{count}} new online order(s)",
     "newMessagesTitle": "{{count}} new customer message(s)",
-    "pendingExpensesTitle": "{{count}} expense(s) awaiting approval"
+    "pendingExpensesTitle": "{{count}} expense(s) awaiting approval",
+    "viewAll": "View all notifications",
+    "pageSubtitle": "Everything that needs your attention right now",
+    "pendingHrTitle": "{{count}} HR request(s) awaiting approval",
+    "salesTodayTitle": "{{count}} sale(s) today",
+    "salesTodayDesc": "ETB {{amount}} taken so far",
+    "branchesOpenTitle": "{{count}} branch(es) have not closed cash"
   },
   "branchReport": {
     "title": "Branch Report",

@@ -456,8 +456,8 @@ export function useBranches() {
   return useCollection<Branch>('branches')
 }
 
-export function useActiveBranches() {
-  return useCollection<Branch>('branches', [where('isActive', '==', true)])
+export function useActiveBranches(options: { enabled?: boolean } = {}) {
+  return useCollection<Branch>('branches', [where('isActive', '==', true)], options)
 }
 
 export function useAddBranch() {
@@ -707,8 +707,8 @@ export function useConfirmCashClose() {
 
 // ─── HR Approvals ───
 /** Fetch all HR approval requests (owner sees all, manager sees own). */
-export function useHrApprovals() {
-  return useCollection<HrApproval>('hrApprovals', [orderBy('submittedAt', 'desc')])
+export function useHrApprovals(options: { enabled?: boolean } = {}) {
+  return useCollection<HrApproval>('hrApprovals', [orderBy('submittedAt', 'desc')], options)
 }
 
 /** Manager submits an HR action for owner approval. */

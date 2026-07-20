@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import {
   useRawMaterials, useProductionBatches, useCashCloses, useBranchStock, useSales,
-  useOrders, useInquiries, useExpenses,
+  useOrders, useInquiries, useExpenses, useHrApprovals, useActiveBranches,
 } from '@/hooks/useData'
 import { useAuthStore } from '@/store/authStore'
 import { filterSalesByRange } from '@/lib/analytics'
@@ -43,6 +43,10 @@ export function useNotifications(): AppNotification[] {
   const { data: orders } = useOrders({ enabled: managerish })
   const { data: inquiries } = useInquiries({ enabled: managerish })
   const { data: expenses } = useExpenses([], { enabled: managerish })
+  const { data: hrApprovals } = useHrApprovals({ enabled: managerish })
+  const { data: allBranches } = useActiveBranches({ enabled: managerish })
+  // Owner/manager watch every branch's trading activity, not just their own.
+  const { data: allSales } = useSales([], { enabled: managerish })
 
   const notes: AppNotification[] = []
 
@@ -118,6 +122,49 @@ export function useNotifications(): AppNotification[] {
         title: t('notifications.pendingExpensesTitle', { count: pendingExpenses.length }),
         description: pendingExpenses.slice(0, 3).map((e) => e.description).join(', ') + (pendingExpenses.length > 3 ? '…' : ''),
         path: '/finance',
+      })
+    }
+
+    // HR actions a manager submitted for the owner to review.
+    const pendingHr = (hrApprovals || []).filter((h) => h.status === 'pending')
+    if (pendingHr.length > 0) {
+      notes.push({
+        id: 'pending-hr',
+        severity: 'warning',
+        title: t('notifications.pendingHrTitle', { count: pendingHr.length }),
+        description: pendingHr.slice(0, 3).map((h) => h.submittedByName || h.type).join(', '),
+        path: '/hr',
+      })
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+    const todayAll = filterSalesByRange(allSales, today, today).filter((s) => s.status !== 'voided')
+
+    // Trading activity so far today, across every branch.
+    if (todayAll.length > 0) {
+      const revenue = todayAll.reduce((sum, s) => sum + s.total, 0)
+      notes.push({
+        id: 'sales-today',
+        severity: 'info',
+        title: t('notifications.salesTodayTitle', { count: todayAll.length }),
+        description: t('notifications.salesTodayDesc', { amount: (revenue / 100).toFixed(2) }),
+        path: '/staff-report',
+      })
+    }
+
+    // Branches that traded today but have not handed their cash over yet.
+    const openBranches = (allBranches || []).filter((b) => {
+      const traded = todayAll.some((s) => s.branchId === b.id)
+      const closed = (closes || []).some((c) => c.branchId === b.id && c.date === today)
+      return traded && !closed
+    })
+    if (openBranches.length > 0) {
+      notes.push({
+        id: 'branches-open',
+        severity: 'warning',
+        title: t('notifications.branchesOpenTitle', { count: openBranches.length }),
+        description: openBranches.slice(0, 3).map((b) => b.name).join(', ') + (openBranches.length > 3 ? '…' : ''),
+        path: '/cash-close',
       })
     }
   }

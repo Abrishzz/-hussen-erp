@@ -194,7 +194,9 @@
     "proofHint": "የዝውውር ማረጋገጫ ቅጽበታዊ ገጽ እይታ",
     "retakePhoto": "እንደገና አንሳ",
     "proofFailed": "ምስሉን ማስኬድ አልተቻለም",
-    "viewProof": "ማረጋገጫ ይመልከቱ"
+    "viewProof": "ማረጋገጫ ይመልከቱ",
+    "dayClosedTitle": "የዚህ ቅርንጫፍ ቀን ተዘግቷል",
+    "dayClosedDesc": "ያልተሸጠ ክምችት ወደ መጋዘን ተመልሷል ገንዘቡም ተላልፏል። ሥራ አስኪያጁ እንደገና ክምችት ሲያከፋፍል ሽያጭ ይቀጥላል።"
   },
   "inventory": {
     "title": "የጥሬ ዕቃ ክምችት",
@@ -528,7 +530,8 @@
       "confirmed": "ተረጋግጧል"
     },
     "byBranch": "ገንዘብ በቅርንጫፍ",
-    "notClosed": "አልተዘጋም"
+    "notClosed": "አልተዘጋም",
+    "returned": "የተመለሰ"
   },
   "notifications": {
     "allClear": "ሁሉም ነገር ተከናውኗል",
@@ -541,7 +544,13 @@
     "dayNotClosedDesc": "ዛሬ {{count}} ትዕዛዝ(ዞች) — ገንዘብ ለማስረከብ ቀኑን ይዝጉ።",
     "newOrdersTitle": "{{count}} አዲስ የመስመር ላይ ትዕዛዝ",
     "newMessagesTitle": "{{count}} አዲስ የደንበኛ መልዕክት",
-    "pendingExpensesTitle": "{{count}} ወጪ ማጽደቅ ይጠብቃል"
+    "pendingExpensesTitle": "{{count}} ወጪ ማጽደቅ ይጠብቃል",
+    "viewAll": "ሁሉንም ማሳወቂያዎች ይመልከቱ",
+    "pageSubtitle": "አሁን ትኩረት የሚሹ ሁሉም ጉዳዮች",
+    "pendingHrTitle": "{{count}} የHR ጥያቄ ማጽደቅ ይጠብቃል",
+    "salesTodayTitle": "ዛሬ {{count}} ሽያጭ",
+    "salesTodayDesc": "እስካሁን ETB {{amount}} ተሰብስቧል",
+    "branchesOpenTitle": "{{count}} ቅርንጫፍ ገንዘብ አልዘጋም"
   },
   "branchReport": {
     "title": "የቅርንጫፍ ሪፖርት",

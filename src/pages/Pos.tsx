@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, Store, AlertTriangle, ShoppingCart } from 'lucide-react'
+import { Plus, Store, AlertTriangle, ShoppingCart, Lock } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import { useBranchStock, useActiveBranches } from '@/hooks/useData'
+import { useBranchStock, useActiveBranches, useCashCloses } from '@/hooks/useData'
 import { useToast } from '@/hooks/useToast'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '@/lib/utils'
@@ -40,6 +40,12 @@ export default function Pos() {
   const { data: branchStock } = useBranchStock(branchScoped ? branchId || undefined : undefined)
   const { data: branches } = useActiveBranches()
   const branchName = branches?.find((b) => b.id === branchId)?.name
+
+  // Selling stops for the rest of the day once this branch's cash is closed.
+  const { data: closes } = useCashCloses([], { enabled: branchScoped && !!branchId })
+  const todayISO = new Date().toISOString().split('T')[0]
+  const dayClosed = branchScoped && !!branchId
+    && (closes || []).some((c) => c.branchId === branchId && c.date === todayISO)
 
   const stockMap: Record<string, number> | null = branchScoped && branchId
     ? Object.fromEntries((branchStock || []).map((s) => [s.productId, s.qty]))
@@ -84,6 +90,23 @@ export default function Pos() {
           <AlertTriangle className="h-12 w-12 text-yellow-500" />
           <h2 className="text-xl font-semibold">{t('pos.noBranchTitle')}</h2>
           <p className="max-w-md text-muted-foreground">{t('pos.noBranchDesc')}</p>
+        </div>
+      </ErrorBoundary>
+    )
+  }
+
+  // Once the day is closed the branch has handed back its stock and its cash —
+  // nothing more may be sold until the manager distributes again tomorrow.
+  if (branchScoped && dayClosed) {
+    return (
+      <ErrorBoundary>
+        <div className="flex h-[60vh] flex-col items-center justify-center gap-3 text-center">
+          <Lock className="h-12 w-12 text-muted-foreground" />
+          <h2 className="text-xl font-semibold">{t('pos.dayClosedTitle')}</h2>
+          <p className="max-w-md text-muted-foreground">{t('pos.dayClosedDesc')}</p>
+          <Button variant="outline" onClick={() => navigate('/cash-close')}>
+            {t('nav.cashClose')}
+          </Button>
         </div>
       </ErrorBoundary>
     )

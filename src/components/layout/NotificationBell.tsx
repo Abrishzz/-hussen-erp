@@ -82,6 +82,12 @@ export function NotificationBell() {
             })}
           </ul>
         )}
+
+        <div className="border-t p-2">
+          <Button variant="ghost" size="sm" className="w-full" onClick={() => go('/notifications')}>
+            {t('notifications.viewAll')}
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   )

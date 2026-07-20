@@ -22,6 +22,7 @@ import Distribution from '@/pages/Distribution'
 import CashClose from '@/pages/CashClose'
 import Settings from '@/pages/Settings'
 import AuditLogs from '@/pages/AuditLogs'
+import Notifications from '@/pages/Notifications'
 import CustomerOrders from '@/pages/CustomerOrders'
 import OwnerOrders from '@/pages/OwnerOrders'
 import NotFound from '@/pages/NotFound'
@@ -96,6 +97,7 @@ function AppRoutes() {
         <Route path="/users" element={
           <ProtectedRoute allowedRoles={['owner']}><Users /></ProtectedRoute>
         } />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/audit-logs" element={
           <ProtectedRoute allowedRoles={['owner']}><AuditLogs /></ProtectedRoute>
         } />
