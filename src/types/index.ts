@@ -325,6 +325,12 @@ export interface HrApproval {
   note?: string
 }
 
+export interface CakeCustomization {
+  type?: 'birthday' | 'wedding' | 'anniversary' | 'engagement' | 'graduation' | 'baby-shower' | 'custom'
+  design?: string
+  textOnCake?: string
+}
+
 export interface OrderItem {
   productId: string
   name_en: string
@@ -332,6 +338,7 @@ export interface OrderItem {
   price: number
   quantity: number
   imageUrl?: string
+  cakeCustomization?: CakeCustomization
 }
 
 export interface Order {

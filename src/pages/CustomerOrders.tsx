@@ -10,7 +10,8 @@ import {
   Truck, BadgeCheck, ChefHat, Star, ArrowRight, CakeSlice, Menu as MenuIcon, Languages,
   ImagePlus, Loader2, MessageSquare, CheckCircle2,
 } from 'lucide-react'
-import type { Product, OrderItem } from '@/types'
+import { CakeCustomizationModal } from '@/features/pos/CakeCustomizationModal'
+import type { Product, OrderItem, CakeCustomization } from '@/types'
 
 // ─── Warm bakery palette ───
 const C = {
@@ -126,6 +127,9 @@ export default function CustomerOrders() {
   const [contact, setContact] = useState({ name: '', email: '', phone: '', message: '' })
   const [contactSending, setContactSending] = useState(false)
   const [contactSent, setContactSent] = useState(false)
+  // Cake customization
+  const [showCakeModal, setShowCakeModal] = useState(false)
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null)
 
   const isAm = i18n.language?.startsWith('am')
   /** Primary/secondary product names by UI language (Oromo falls back to English). */
@@ -166,25 +170,51 @@ export default function CustomerOrders() {
   const cartCount = cart.reduce((n, i) => n + i.quantity, 0)
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0)
 
+  const isCakeProduct = (p: Product) => p.category?.toLowerCase().includes('cake')
+
   const addToCart = (p: Product) => {
-    setCart((prev) => {
-      const found = prev.find((i) => i.productId === p.id)
-      if (found) {
-        return prev.map((i) => i.productId === p.id ? { ...i, quantity: i.quantity + 1 } : i)
-      }
-      return [...prev, {
+    if (isCakeProduct(p)) {
+      setPendingProduct(p)
+      setShowCakeModal(true)
+    } else {
+      addToCartItem({
         productId: p.id, name_en: p.name_en, name_am: p.name_am,
         price: p.price, quantity: 1, imageUrl: photoFor(p),
-      }]
+      })
+    }
+  }
+
+  const addToCartItem = (item: OrderItem) => {
+    setCart((prev) => {
+      const found = prev.find((i) => i.productId === item.productId && JSON.stringify(i.cakeCustomization || {}) === JSON.stringify(item.cakeCustomization || {}))
+      if (found) {
+        return prev.map((i) => i === found ? { ...i, quantity: i.quantity + 1 } : i)
+      }
+      return [...prev, item]
     })
   }
 
-  const setQty = (productId: string, quantity: number) => {
+  const handleCakeCustomization = (customization: CakeCustomization) => {
+    if (pendingProduct) {
+      addToCartItem({
+        productId: pendingProduct.id,
+        name_en: pendingProduct.name_en,
+        name_am: pendingProduct.name_am,
+        price: pendingProduct.price,
+        quantity: 1,
+        imageUrl: photoFor(pendingProduct),
+        cakeCustomization: customization,
+      })
+      setPendingProduct(null)
+    }
+  }
+
+  const setQty = (index: number, quantity: number) => {
     if (quantity <= 0) {
-      setCart((prev) => prev.filter((i) => i.productId !== productId))
+      setCart((prev) => prev.filter((_, i) => i !== index))
       return
     }
-    setCart((prev) => prev.map((i) => i.productId === productId ? { ...i, quantity } : i))
+    setCart((prev) => prev.map((item, i) => i === index ? { ...item, quantity } : item))
   }
 
   const handleProofFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -825,6 +855,17 @@ export default function CustomerOrders() {
         )}
       </AnimatePresence>
 
+      {/* ───────────────── Cake Customization Modal ───────────────── */}
+      <CakeCustomizationModal
+        isOpen={showCakeModal}
+        onClose={() => {
+          setShowCakeModal(false)
+          setPendingProduct(null)
+        }}
+        onConfirm={handleCakeCustomization}
+        isCakeProduct={!!pendingProduct}
+      />
+
       {/* ───────────────── Cart drawer ───────────────── */}
       <AnimatePresence>
         {showCart && (
@@ -853,24 +894,31 @@ export default function CustomerOrders() {
                     <span className="text-5xl">🧺</span>
                     <p className="mt-3 opacity-60">{t('storefront.cartEmpty')}</p>
                   </div>
-                ) : cart.map((item) => (
+                ) : cart.map((item, idx) => (
                   <motion.div
-                    key={item.productId}
+                    key={`${item.productId}-${idx}`}
                     layout
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: 40 }}
-                    className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm"
+                    className="flex items-start gap-3 rounded-2xl bg-white p-3 shadow-sm"
                   >
-                    <img src={item.imageUrl} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                    <img src={item.imageUrl} alt="" className="h-14 w-14 rounded-xl object-cover shrink-0" />
                     <div className="min-w-0 flex-1">
                       <p className={`truncate text-sm font-bold ${isAm ? 'font-ethiopic' : ''}`}>{nameOf(item)}</p>
                       <p className="text-xs opacity-60">{formatCurrency(item.price)}</p>
+                      {item.cakeCustomization && (
+                        <div className="mt-1.5 space-y-0.5 rounded-lg bg-amber-50 p-2 text-[11px]">
+                          {item.cakeCustomization.type && <p><span className="font-semibold">Occasion:</span> {item.cakeCustomization.type}</p>}
+                          {item.cakeCustomization.design && <p><span className="font-semibold">Design:</span> {item.cakeCustomization.design.substring(0, 40)}...</p>}
+                          {item.cakeCustomization.textOnCake && <p><span className="font-semibold">Text:</span> "{item.cakeCustomization.textOnCake}"</p>}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => setQty(item.productId, item.quantity - 1)} className="rounded-full p-2 hover:bg-black/5"><Minus className="h-3.5 w-3.5" /></button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => setQty(idx, item.quantity - 1)} className="rounded-full p-2 hover:bg-black/5"><Minus className="h-3.5 w-3.5" /></button>
                       <span className="w-6 text-center text-sm font-bold">{item.quantity}</span>
-                      <button onClick={() => setQty(item.productId, item.quantity + 1)} className="rounded-full p-2 hover:bg-black/5"><Plus className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => setQty(idx, item.quantity + 1)} className="rounded-full p-2 hover:bg-black/5"><Plus className="h-3.5 w-3.5" /></button>
                     </div>
                   </motion.div>
                 ))}
@@ -1036,11 +1084,20 @@ export default function CustomerOrders() {
                     />
                   </div>
 
-                  <div className="mt-5 space-y-1.5 rounded-2xl p-4" style={{ backgroundColor: C.creamDark }}>
-                    {cart.map((i) => (
-                      <div key={i.productId} className="flex justify-between text-sm">
-                        <span className={`truncate pr-3 ${isAm ? 'font-ethiopic' : ''}`}>{nameOf(i)} × {i.quantity}</span>
-                        <span className="shrink-0 font-semibold">{formatCurrency(i.price * i.quantity)}</span>
+                  <div className="mt-5 space-y-2 rounded-2xl p-4" style={{ backgroundColor: C.creamDark }}>
+                    {cart.map((i, idx) => (
+                      <div key={`${i.productId}-${idx}`}>
+                        <div className="flex justify-between text-sm">
+                          <span className={`truncate pr-3 ${isAm ? 'font-ethiopic' : ''}`}>{nameOf(i)} × {i.quantity}</span>
+                          <span className="shrink-0 font-semibold">{formatCurrency(i.price * i.quantity)}</span>
+                        </div>
+                        {i.cakeCustomization && (
+                          <div className="mt-1 ml-2 space-y-0.5 text-[11px] opacity-70 border-l-2 pl-2" style={{ borderColor: C.caramel }}>
+                            {i.cakeCustomization.type && <p>📌 {i.cakeCustomization.type}</p>}
+                            {i.cakeCustomization.design && <p>🎨 {i.cakeCustomization.design.substring(0, 45)}</p>}
+                            {i.cakeCustomization.textOnCake && <p>✍️ "{i.cakeCustomization.textOnCake}"</p>}
+                          </div>
+                        )}
                       </div>
                     ))}
                     <div className="flex justify-between border-t border-black/10 pt-2 font-extrabold">

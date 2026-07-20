@@ -18,7 +18,7 @@ import { toDate } from '@/lib/timestamp'
 import {
   Clock, CheckCircle2, Package, Filter, Search, Eye, X, Truck, DollarSign,
   ShoppingCart, Loader2, Receipt, Copy, Plus, Pencil, Trash2, ClipboardList,
-  MessageSquare, Phone, Mail, ImageIcon,
+  MessageSquare, Phone, Mail, ImageIcon, Cake,
 } from 'lucide-react'
 import type { Order, Inquiry, Product } from '@/types'
 
@@ -208,6 +208,11 @@ function OrdersView() {
                           {statusLabel(order.status)}
                         </Badge>
                         {order.paymentProof && <Badge variant="outline" className="gap-1"><ImageIcon className="h-3 w-3" /></Badge>}
+                        {order.items.some((item) => item.cakeCustomization) && (
+                          <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
+                            <Cake className="h-3 w-3" /> Customized
+                          </Badge>
+                        )}
                         <span className="text-xs text-muted-foreground">{formatWhen(order.createdAt)}</span>
                       </div>
                       <p className="font-medium">{order.customerName}</p>
@@ -315,20 +320,38 @@ function OrdersView() {
 
               <div>
                 <p className="mb-3 text-sm font-semibold">{t('orders.orderItems')}</p>
-                <div className="space-y-2">
-                  {selectedOrder.items.map((item) => (
-                    <div key={item.productId} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
-                      <div className="flex items-center gap-3">
-                        {item.imageUrl && <img src={item.imageUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />}
-                        <div>
-                          <p className={`text-sm font-medium ${isAm ? 'font-ethiopic' : ''}`}>{nameOf(item)}</p>
-                          <p className={`text-xs text-muted-foreground ${isAm ? '' : 'font-ethiopic'}`}>{subNameOf(item)}</p>
+                <div className="space-y-3">
+                  {selectedOrder.items.map((item, idx) => (
+                    <div key={`${item.productId}-${idx}`} className="rounded-lg bg-muted/50 p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {item.imageUrl && <img src={item.imageUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />}
+                          <div>
+                            <p className={`text-sm font-medium ${isAm ? 'font-ethiopic' : ''}`}>{nameOf(item)}</p>
+                            <p className={`text-xs text-muted-foreground ${isAm ? '' : 'font-ethiopic'}`}>{subNameOf(item)}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm">{item.quantity} × {formatCurrency(item.price)}</p>
+                          <p className="text-xs text-muted-foreground">{formatCurrency(item.price * item.quantity)}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm">{item.quantity} × {formatCurrency(item.price)}</p>
-                        <p className="text-xs text-muted-foreground">{formatCurrency(item.price * item.quantity)}</p>
-                      </div>
+                      {item.cakeCustomization && (
+                        <div className="mt-2 space-y-1 rounded-lg border border-amber-300/60 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+                          <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">🎂 Cake Customization</p>
+                          <div className="space-y-0.5 text-xs text-amber-800 dark:text-amber-200">
+                            {item.cakeCustomization.type && (
+                              <p><span className="font-semibold">Occasion:</span> {item.cakeCustomization.type}</p>
+                            )}
+                            {item.cakeCustomization.design && (
+                              <p><span className="font-semibold">Design:</span> {item.cakeCustomization.design}</p>
+                            )}
+                            {item.cakeCustomization.textOnCake && (
+                              <p><span className="font-semibold">Text on Cake:</span> "{item.cakeCustomization.textOnCake}"</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
