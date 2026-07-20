@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTodaySales } from '@/hooks/useData'
+import { useAuthStore } from '@/store/authStore'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency } from '@/lib/utils'
@@ -7,7 +9,16 @@ import { DollarSign, ShoppingBag, TrendingUp } from 'lucide-react'
 
 export function DailySalesSummary() {
   const { t } = useTranslation()
-  const { data: sales, isLoading } = useTodaySales()
+  const { role, branchId } = useAuthStore()
+  const { data: allSales, isLoading } = useTodaySales()
+
+  // A cashier only ever sees their own branch's numbers here — never the
+  // company-wide total. Owner/manager (unscoped) still see everything.
+  const sales = useMemo(() => {
+    if (role !== 'cashier') return allSales
+    if (!branchId) return []
+    return (allSales || []).filter((s) => s.branchId === branchId)
+  }, [allSales, role, branchId])
 
   if (isLoading) {
     return (

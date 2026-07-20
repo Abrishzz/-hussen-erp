@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import {
   useProductionBatches, useRecipes, useConfirmBatch,
   useWarehouseStock, useActiveBranches, useDistribute, useDistributions,
-  useBranchStock, useProducts,
+  useBranchStock, useProducts, useUpdateBatch, useSetWarehouseQty, useSetBranchStockQty,
 } from '@/hooks/useData'
+import { useAuthStore } from '@/store/authStore'
 import { downloadSpreadsheet } from '@/lib/excel'
 import { Download } from 'lucide-react'
 import { useToast } from '@/hooks/useToast'
@@ -22,8 +23,81 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Warehouse, CheckCircle2, Truck, PackageCheck } from 'lucide-react'
+import { Warehouse, CheckCircle2, Truck, PackageCheck, Pencil, Check, X, Loader2 } from 'lucide-react'
 import type { DistributionLine, WarehouseStockItem } from '@/types'
+
+/**
+ * A quantity the owner can correct in place. Shows the number with a pencil;
+ * clicking it swaps in an input with save/cancel. `onSave` persists the value.
+ */
+function EditableQty({
+  value, onSave, canEdit, align = 'right',
+}: {
+  value: number
+  onSave: (next: number) => Promise<unknown>
+  canEdit: boolean
+  align?: 'right' | 'left'
+}) {
+  const { t } = useTranslation()
+  const { show } = useToast()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(String(value))
+  const [saving, setSaving] = useState(false)
+
+  if (!canEdit) return <span>{value}</span>
+
+  const commit = async () => {
+    const next = parseInt(draft)
+    if (isNaN(next) || next < 0) { setEditing(false); return }
+    if (next === value) { setEditing(false); return }
+    setSaving(true)
+    try {
+      await onSave(next)
+      show(t('distribution.qtyUpdated'), 'success')
+      setEditing(false)
+    } catch {
+      show(t('distribution.qtyUpdateFailed'), 'destructive')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!editing) {
+    return (
+      <span className={`inline-flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
+        {value}
+        <Button
+          variant="ghost" size="icon" className="h-6 w-6 opacity-50 hover:opacity-100"
+          title={t('distribution.editQty')}
+          onClick={() => { setDraft(String(value)); setEditing(true) }}
+        >
+          <Pencil className="h-3 w-3" />
+        </Button>
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Input
+        type="number" min={0} autoFocus
+        className="h-7 w-20 text-right"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') setEditing(false)
+        }}
+      />
+      <Button variant="ghost" size="icon" className="h-6 w-6 text-emerald-600" disabled={saving} onClick={commit}>
+        {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+      </Button>
+      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" disabled={saving} onClick={() => setEditing(false)}>
+        <X className="h-3.5 w-3.5" />
+      </Button>
+    </span>
+  )
+}
 
 export default function Distribution() {
   return <ErrorBoundary><DistributionContent /></ErrorBoundary>
@@ -65,6 +139,9 @@ function ConfirmTab() {
   const { data: recipes } = useRecipes()
   const { data: products } = useProducts()
   const confirmBatch = useConfirmBatch()
+  const updateBatch = useUpdateBatch()
+  const { role } = useAuthStore()
+  const canEdit = role === 'owner'
   const [busy, setBusy] = useState<string | null>(null)
   // Manual product choice for orphaned batches (recipe deleted / no product link).
   const [pick, setPick] = useState<Record<string, string>>({})
@@ -116,7 +193,12 @@ function ConfirmTab() {
 
   return (
     <Card>
-      <CardHeader><CardTitle>{t('distribution.pendingConfirmation')}</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle>{t('distribution.pendingConfirmation')}</CardTitle>
+        {canEdit && pending.length > 0 && (
+          <p className="text-sm text-muted-foreground">{t('distribution.correctBeforeConfirm')}</p>
+        )}
+      </CardHeader>
       <CardContent>
         {pending.length === 0 ? (
           <p className="py-10 text-center text-muted-foreground">{t('distribution.noPending')}</p>
@@ -145,7 +227,13 @@ function ConfirmTab() {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">{b.actualQty}</TableCell>
+                      <TableCell className="text-right">
+                        <EditableQty
+                          value={b.actualQty}
+                          canEdit={canEdit}
+                          onSave={(next) => updateBatch.mutateAsync({ id: b.id, data: { actualQty: next } })}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-2">
                           {/* Orphaned batch: let the owner pick which product it goes into. */}
@@ -185,6 +273,9 @@ function DistributeTab() {
   const { data: warehouse } = useWarehouseStock()
   const { data: branches } = useActiveBranches()
   const distribute = useDistribute()
+  const setWarehouseQty = useSetWarehouseQty()
+  const { role } = useAuthStore()
+  const canEdit = role === 'owner'
 
   const available = (warehouse || []).filter((w) => w.qty > 0)
   const [productId, setProductId] = useState('')
@@ -243,7 +334,17 @@ function DistributeTab() {
                     <TableRow key={w.id}>
                       <TableCell className="font-medium">{w.name_en}</TableCell>
                       <TableCell className="text-right">
-                        <Badge variant={w.qty > 0 ? 'success' : 'secondary'}>{w.qty}</Badge>
+                        {canEdit ? (
+                          <EditableQty
+                            value={w.qty}
+                            canEdit
+                            onSave={(next) => setWarehouseQty.mutateAsync({
+                              productId: w.productId, name_en: w.name_en, name_am: w.name_am, qty: next,
+                            })}
+                          />
+                        ) : (
+                          <Badge variant={w.qty > 0 ? 'success' : 'secondary'}>{w.qty}</Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -343,6 +444,9 @@ function ByBranchTab() {
   const { data: branches } = useActiveBranches()
   const { data: branchStock } = useBranchStock()
   const { data: warehouse } = useWarehouseStock()
+  const setBranchQty = useSetBranchStockQty()
+  const { role } = useAuthStore()
+  const canEdit = role === 'owner'
 
   const activeBranches = branches || []
   // Every product that exists anywhere (warehouse or a branch), by name.
@@ -407,9 +511,22 @@ function ByBranchTab() {
                     </TableCell>
                     {activeBranches.map((b) => {
                       const q = qtyFor(b.id, pid)
+                      // Names come from whichever record we already have for this product.
+                      const known = (branchStock || []).find((s) => s.productId === pid)
+                        || (warehouse || []).find((w) => w.productId === pid)
                       return (
                         <TableCell key={b.id} className={'text-right ' + (q === 0 ? 'text-muted-foreground/50' : 'font-medium')}>
-                          {q}
+                          <EditableQty
+                            value={q}
+                            canEdit={canEdit}
+                            onSave={(next) => setBranchQty.mutateAsync({
+                              branchId: b.id,
+                              productId: pid,
+                              name_en: known?.name_en || name,
+                              name_am: known?.name_am || '',
+                              qty: next,
+                            })}
+                          />
                         </TableCell>
                       )
                     })}

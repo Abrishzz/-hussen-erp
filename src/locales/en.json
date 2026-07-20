@@ -21,7 +21,8 @@
     "cashClose": "Cash Close",
     "branches": "Branches",
     "branchReport": "Branch Report",
-    "orders": "Order Management"
+    "orders": "Order Management",
+    "auditLogs": "Audit Logs"
   },
   "common": {
     "save": "Save",
@@ -410,7 +411,9 @@
     "revenueOverview": "Revenue Overview",
     "monthlyTarget": "Monthly Target",
     "vsLastMonth": "vs last month",
-    "toGo": "to go"
+    "toGo": "to go",
+    "recentOrders": "Recent Orders",
+    "viewAll": "View all"
   },
   "errors": {
     "pageNotFound": "Page Not Found",
@@ -495,7 +498,12 @@
     "enterQty": "Enter a quantity for at least one branch",
     "distributedToast": "Distributed to branches",
     "byBranch": "Stock by Branch",
-    "pickProductHint": "No linked product — pick one to confirm into"
+    "pickProductHint": "No linked product — pick one to confirm into",
+    "editQty": "Edit quantity",
+    "qtyUpdated": "Quantity updated",
+    "qtyUpdateFailed": "Could not update the quantity",
+    "correctBeforeConfirm": "Correct the quantity before confirming into the warehouse.",
+    "stockCorrection": "Stock correction"
   },
   "cashClose": {
     "title": "Cash Close",
@@ -530,7 +538,10 @@
     "branchEmptyTitle": "No stock at your branch",
     "branchEmptyDesc": "Nothing left to sell — ask the manager to distribute stock.",
     "dayNotClosedTitle": "Today's sales not closed yet",
-    "dayNotClosedDesc": "{{count}} order(s) today — close the day to hand over cash."
+    "dayNotClosedDesc": "{{count}} order(s) today — close the day to hand over cash.",
+    "newOrdersTitle": "{{count}} new online order(s)",
+    "newMessagesTitle": "{{count}} new customer message(s)",
+    "pendingExpensesTitle": "{{count}} expense(s) awaiting approval"
   },
   "branchReport": {
     "title": "Branch Report",
@@ -721,5 +732,32 @@
     "reply": "Reply",
     "callCustomer": "Call",
     "newMessages": "{{count}} new"
+  },
+  "audit": {
+    "title": "Audit Logs",
+    "subtitle": "Full activity across the system",
+    "searchPlaceholder": "Search by person, action, or detail…",
+    "type": "Type",
+    "actor": "Done by",
+    "noActivity": "No activity recorded yet.",
+    "showing": "Showing {{shown}} of {{total}} entries",
+    "loadMore": "Load more",
+    "confirmed": "Confirmed into warehouse",
+    "notConfirmed": "Not yet confirmed",
+    "saleSummary": "Sale of {{count}} item(s)",
+    "distributionSummary": "Distributed {{count}} line(s) to branches",
+    "cashCloseSummary": "Day closed for {{branch}}",
+    "productionSummary": "Produced {{qty}} × {{product}}",
+    "orderSummary": "Online order #{{id}}",
+    "inquirySummary": "Customer message received",
+    "kinds": {
+      "sale": "Sale",
+      "distribution": "Distribution",
+      "cashClose": "Cash Close",
+      "production": "Production",
+      "expense": "Expense",
+      "order": "Order",
+      "inquiry": "Message"
+    }
   }
 }

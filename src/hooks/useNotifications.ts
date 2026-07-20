@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import {
   useRawMaterials, useProductionBatches, useCashCloses, useBranchStock, useSales,
+  useOrders, useInquiries, useExpenses,
 } from '@/hooks/useData'
 import { useAuthStore } from '@/store/authStore'
 import { filterSalesByRange } from '@/lib/analytics'
@@ -39,6 +40,9 @@ export function useNotifications(): AppNotification[] {
   const { data: closes } = useCashCloses([], { enabled: managerish || isCashier })
   const { data: branchStock } = useBranchStock(branchId || undefined, { enabled: isCashier && !!branchId })
   const { data: sales } = useSales([], { enabled: isCashier })
+  const { data: orders } = useOrders({ enabled: managerish })
+  const { data: inquiries } = useInquiries({ enabled: managerish })
+  const { data: expenses } = useExpenses([], { enabled: managerish })
 
   const notes: AppNotification[] = []
 
@@ -78,6 +82,42 @@ export function useNotifications(): AppNotification[] {
         title: t('notifications.awaitingCashTitle', { count: awaiting.length }),
         description: awaiting.slice(0, 3).map((c) => c.branchName).join(', ') + (awaiting.length > 3 ? '…' : ''),
         path: '/cash-close',
+      })
+    }
+
+    // New online orders from the storefront waiting to be actioned.
+    const newOrders = (orders || []).filter((o) => o.status === 'pending')
+    if (newOrders.length > 0) {
+      notes.push({
+        id: 'new-orders',
+        severity: 'warning',
+        title: t('notifications.newOrdersTitle', { count: newOrders.length }),
+        description: newOrders.slice(0, 3).map((o) => o.customerName).join(', ') + (newOrders.length > 3 ? '…' : ''),
+        path: '/owner/orders',
+      })
+    }
+
+    // Unread "Contact Us" messages from customers.
+    const newMessages = (inquiries || []).filter((i) => i.status === 'new')
+    if (newMessages.length > 0) {
+      notes.push({
+        id: 'new-messages',
+        severity: 'info',
+        title: t('notifications.newMessagesTitle', { count: newMessages.length }),
+        description: newMessages.slice(0, 3).map((i) => i.name).join(', ') + (newMessages.length > 3 ? '…' : ''),
+        path: '/owner/orders',
+      })
+    }
+
+    // Manager-submitted expenses the owner still has to approve.
+    const pendingExpenses = (expenses || []).filter((e) => e.status === 'pending')
+    if (pendingExpenses.length > 0) {
+      notes.push({
+        id: 'pending-expenses',
+        severity: 'warning',
+        title: t('notifications.pendingExpensesTitle', { count: pendingExpenses.length }),
+        description: pendingExpenses.slice(0, 3).map((e) => e.description).join(', ') + (pendingExpenses.length > 3 ? '…' : ''),
+        path: '/finance',
       })
     }
   }

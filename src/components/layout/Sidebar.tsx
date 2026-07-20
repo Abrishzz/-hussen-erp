@@ -20,6 +20,7 @@ import {
   Banknote,
   Building2,
   Clipboard,
+  ScrollText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
@@ -50,6 +51,7 @@ const navItems: NavItem[] = [
   { label: 'nav.branchReport', path: '/branch-report', icon: Building2, roles: ['owner', 'manager'] },
   { label: 'nav.branches', path: '/branches', icon: Building2, roles: ['owner'] },
   { label: 'nav.users', path: '/users', icon: UserCog, roles: ['owner'] },
+  { label: 'nav.auditLogs', path: '/audit-logs', icon: ScrollText, roles: ['owner'] },
   { label: 'nav.settings', path: '/settings', icon: Settings, roles: ['owner'] },
 ]
 

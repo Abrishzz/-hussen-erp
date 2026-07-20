@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import {
   useTodaySales, useRawMaterials, useProductionBatches, useSales, useUsers, useActiveBranches,
-  useExpenses,
+  useExpenses, useOrders, useInquiries,
 } from '@/hooks/useData'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
@@ -21,7 +23,7 @@ import {
 } from 'recharts'
 import {
   DollarSign, ShoppingCart, AlertTriangle, Factory, TrendingUp, TrendingDown,
-  Package, BarChart3, Trophy, Building2,
+  Package, BarChart3, Trophy, Building2, ClipboardList, MessageSquare,
 } from 'lucide-react'
 
 const PAY_COLORS: Record<string, string> = {
@@ -85,6 +87,12 @@ function DashboardContent() {
   const { data: users } = useUsers()
   const { data: branches } = useActiveBranches()
   const { data: expenses } = useExpenses()
+  const { data: orders } = useOrders()
+  const { data: inquiries } = useInquiries()
+
+  // Newest first already; just take the head for the dashboard cards.
+  const recentOrders = (orders || []).slice(0, 5)
+  const recentInquiries = (inquiries || []).slice(0, 5)
 
   const today = new Date().toISOString().split('T')[0]
   const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
@@ -384,6 +392,90 @@ function DashboardContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Recent online orders + customer messages */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ClipboardList className="h-4 w-4 text-primary" /> {t('dashboard.recentOrders')}
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/owner/orders')}>
+              {t('dashboard.viewAll')}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {recentOrders.length === 0 ? (
+              <p className="py-8 text-center text-muted-foreground">{t('orders.noOrdersYet')}</p>
+            ) : (
+              <div className="space-y-2">
+                {recentOrders.map((o) => (
+                  <button
+                    key={o.id}
+                    onClick={() => navigate('/owner/orders')}
+                    className="flex w-full items-center gap-3 rounded-xl border border-border/60 p-3 text-left transition-colors hover:bg-accent"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <ClipboardList className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-medium">{o.customerName}</span>
+                        <span className="shrink-0 text-sm font-bold tabular-nums">{formatCurrency(o.total)}</span>
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <Badge variant={o.status === 'pending' ? 'secondary' : 'outline'} className="capitalize">
+                          {t(`orders.status.${o.status}`)}
+                        </Badge>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {o.items?.length ?? 0} × {t('pos.items')}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MessageSquare className="h-4 w-4 text-primary" /> {t('orders.inquiries')}
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/owner/orders')}>
+              {t('dashboard.viewAll')}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {recentInquiries.length === 0 ? (
+              <p className="py-8 text-center text-muted-foreground">{t('orders.noInquiries')}</p>
+            ) : (
+              <div className="space-y-2">
+                {recentInquiries.map((i) => (
+                  <button
+                    key={i.id}
+                    onClick={() => navigate('/owner/orders')}
+                    className="flex w-full items-start gap-3 rounded-xl border border-border/60 p-3 text-left transition-colors hover:bg-accent"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <MessageSquare className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium">{i.name}</span>
+                        {i.status === 'new' && <Badge>{t('orders.inquiryNew')}</Badge>}
+                      </div>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{i.message}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Staff performance */}
       <Card>

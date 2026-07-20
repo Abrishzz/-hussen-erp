@@ -387,8 +387,12 @@ export function useUpdateLoan() {
 }
 
 // ─── Expenses ───
-export function useExpenses(constraints: QueryConstraint[] = []) {
-  return useCollection<Expense>('expenses', constraints.length ? constraints : [orderBy('date', 'desc')])
+export function useExpenses(constraints: QueryConstraint[] = [], options: { enabled?: boolean } = {}) {
+  return useCollection<Expense>(
+    'expenses',
+    constraints.length ? constraints : [orderBy('date', 'desc')],
+    options,
+  )
 }
 
 /**
@@ -529,6 +533,28 @@ export function useSetWarehouseQty() {
         { merge: true }
       ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['warehouseStock'] }),
+  })
+}
+
+/** Sets one branch's stock for a product outright — a manual stock correction. */
+export function useSetBranchStockQty() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: {
+      branchId: string; productId: string; name_en: string; name_am: string; qty: number
+    }) =>
+      setDoc(
+        doc(db, 'branchStock', `${args.branchId}_${args.productId}`),
+        {
+          branchId: args.branchId,
+          productId: args.productId,
+          name_en: args.name_en,
+          name_am: args.name_am,
+          qty: args.qty,
+        },
+        { merge: true }
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['branchStock'] }),
   })
 }
 
@@ -725,10 +751,12 @@ export function useReviewHrApproval() {
  * Live feed of customer orders, newest first. Uses onSnapshot so new orders
  * appear in Order Management the moment a customer places one.
  */
-export function useOrders() {
+export function useOrders(options: { enabled?: boolean } = {}) {
+  const enabled = options.enabled ?? true
   const [data, setData] = useState<Order[] | undefined>(undefined)
   const [error, setError] = useState<Error | null>(null)
   useEffect(() => {
+    if (!enabled) return
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'))
     const unsub = onSnapshot(
       q,
@@ -736,8 +764,8 @@ export function useOrders() {
       (err) => setError(err),
     )
     return unsub
-  }, [])
-  return { data, isLoading: data === undefined && !error, error }
+  }, [enabled])
+  return { data, isLoading: enabled && data === undefined && !error, error }
 }
 
 /** Place a customer order (no login required — rules validate the payload). */
@@ -758,10 +786,12 @@ export function useUpdateOrderStatus() {
 // ─── Customer Inquiries (storefront "Contact Us" → owner dashboard) ───
 
 /** Live feed of contact-form inquiries, newest first. */
-export function useInquiries() {
+export function useInquiries(options: { enabled?: boolean } = {}) {
+  const enabled = options.enabled ?? true
   const [data, setData] = useState<Inquiry[] | undefined>(undefined)
   const [error, setError] = useState<Error | null>(null)
   useEffect(() => {
+    if (!enabled) return
     const q = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'))
     const unsub = onSnapshot(
       q,
@@ -769,8 +799,8 @@ export function useInquiries() {
       (err) => setError(err),
     )
     return unsub
-  }, [])
-  return { data, isLoading: data === undefined && !error, error }
+  }, [enabled])
+  return { data, isLoading: enabled && data === undefined && !error, error }
 }
 
 /** Submit a contact inquiry (no login required — rules validate the payload). */

@@ -21,7 +21,8 @@
     "cashClose": "የገንዘብ ዝግ",
     "branches": "ቅርንጫፎች",
     "branchReport": "የቅርንጫፍ ሪፖርት",
-    "orders": "የትዕዛዝ አስተዳደር"
+    "orders": "የትዕዛዝ አስተዳደር",
+    "auditLogs": "የስርዓት እንቅስቃሴ"
   },
   "common": {
     "save": "አስቀምጥ",
@@ -410,7 +411,9 @@
     "revenueOverview": "የገቢ አጠቃላይ እይታ",
     "monthlyTarget": "ወርሃዊ ግብ",
     "vsLastMonth": "ካለፈው ወር",
-    "toGo": "ይቀራል"
+    "toGo": "ይቀራል",
+    "recentOrders": "የቅርብ ጊዜ ትዕዛዞች",
+    "viewAll": "ሁሉንም ይመልከቱ"
   },
   "errors": {
     "pageNotFound": "ገጹ አልተገኘም",
@@ -495,7 +498,12 @@
     "enterQty": "ቢያንስ ለአንድ ቅርንጫፍ ብዛት ያስገቡ",
     "distributedToast": "ወደ ቅርንጫፎች ተሰራጭቷል",
     "byBranch": "ክምችት በቅርንጫፍ",
-    "pickProductHint": "የተያያዘ ምርት የለም — ለማረጋገጥ አንዱን ይምረጡ"
+    "pickProductHint": "የተያያዘ ምርት የለም — ለማረጋገጥ አንዱን ይምረጡ",
+    "editQty": "ብዛት አስተካክል",
+    "qtyUpdated": "ብዛቱ ተስተካክሏል",
+    "qtyUpdateFailed": "ብዛቱን ማዘመን አልተቻለም",
+    "correctBeforeConfirm": "ወደ መጋዘን ከማረጋገጥዎ በፊት ብዛቱን ያስተካክሉ።",
+    "stockCorrection": "የክምችት ማስተካከያ"
   },
   "cashClose": {
     "title": "የገንዘብ ዝግ",
@@ -530,7 +538,10 @@
     "branchEmptyTitle": "በቅርንጫፍዎ ክምችት የለም",
     "branchEmptyDesc": "የሚሸጥ ነገር የለም — ስራ አስኪያጁ ክምችት እንዲያሰራጭ ይጠይቁ።",
     "dayNotClosedTitle": "የዛሬ ሽያጭ ገና አልተዘጋም",
-    "dayNotClosedDesc": "ዛሬ {{count}} ትዕዛዝ(ዞች) — ገንዘብ ለማስረከብ ቀኑን ይዝጉ።"
+    "dayNotClosedDesc": "ዛሬ {{count}} ትዕዛዝ(ዞች) — ገንዘብ ለማስረከብ ቀኑን ይዝጉ።",
+    "newOrdersTitle": "{{count}} አዲስ የመስመር ላይ ትዕዛዝ",
+    "newMessagesTitle": "{{count}} አዲስ የደንበኛ መልዕክት",
+    "pendingExpensesTitle": "{{count}} ወጪ ማጽደቅ ይጠብቃል"
   },
   "branchReport": {
     "title": "የቅርንጫፍ ሪፖርት",
@@ -721,5 +732,32 @@
     "reply": "መልስ",
     "callCustomer": "ደውል",
     "newMessages": "{{count}} አዲስ"
+  },
+  "audit": {
+    "title": "የስርዓት እንቅስቃሴ",
+    "subtitle": "በስርዓቱ ውስጥ ያለው ሙሉ እንቅስቃሴ",
+    "searchPlaceholder": "በሰው፣ በተግባር ወይም በዝርዝር ይፈልጉ…",
+    "type": "ዓይነት",
+    "actor": "ያከናወነው",
+    "noActivity": "እስካሁን የተመዘገበ እንቅስቃሴ የለም።",
+    "showing": "ከ{{total}} ውስጥ {{shown}} እየታየ",
+    "loadMore": "ተጨማሪ ጫን",
+    "confirmed": "ወደ መጋዘን ተረጋግጧል",
+    "notConfirmed": "ገና አልተረጋገጠም",
+    "saleSummary": "የ{{count}} ዕቃ ሽያጭ",
+    "distributionSummary": "{{count}} መስመር ወደ ቅርንጫፎች ተሰራጭቷል",
+    "cashCloseSummary": "ለ{{branch}} ቀኑ ተዘግቷል",
+    "productionSummary": "{{qty}} × {{product}} ተመርቷል",
+    "orderSummary": "የመስመር ላይ ትዕዛዝ #{{id}}",
+    "inquirySummary": "የደንበኛ መልዕክት ደርሷል",
+    "kinds": {
+      "sale": "ሽያጭ",
+      "distribution": "ስርጭት",
+      "cashClose": "የገንዘብ ዝግ",
+      "production": "ምርት",
+      "expense": "ወጪ",
+      "order": "ትዕዛዝ",
+      "inquiry": "መልዕክት"
+    }
   }
 }

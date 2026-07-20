@@ -21,7 +21,8 @@
     "cashClose": "Cufinsa Kaashii",
     "branches": "Dameewwan",
     "branchReport": "Gabaasa Damee",
-    "orders": "Bulchiinsa Ajajaa"
+    "orders": "Bulchiinsa Ajajaa",
+    "auditLogs": "Galmee Sochii"
   },
   "common": {
     "save": "Olkaa'i",
@@ -410,7 +411,9 @@
     "revenueOverview": "Ilaalcha Galii",
     "monthlyTarget": "Kaayyoo Ji'aa",
     "vsLastMonth": "ji'a darbe waliin",
-    "toGo": "hafa"
+    "toGo": "hafa",
+    "recentOrders": "Ajajawwan Dhiheenyaa",
+    "viewAll": "Hunda ilaali"
   },
   "errors": {
     "pageNotFound": "Fuulli Hin Argamne",
@@ -495,7 +498,12 @@
     "enterQty": "Yoo xiqqaate damee tokkoof baay'ina galchi",
     "distributedToast": "Dameewwanitti raabsameera",
     "byBranch": "Kuusaa Dameedhaan",
-    "pickProductHint": "Oomishni walqabatu hin jiru — mirkaneessuuf tokko filadhu"
+    "pickProductHint": "Oomishni walqabatu hin jiru — mirkaneessuuf tokko filadhu",
+    "editQty": "Baay'ina gulaali",
+    "qtyUpdated": "Baay'inni haaromfameera",
+    "qtyUpdateFailed": "Baay'ina haaromsuun hin danda'amne",
+    "correctBeforeConfirm": "Kuusaatti osoo hin mirkaneessin dura baay'ina sirreessi.",
+    "stockCorrection": "Sirreeffama kuusaa"
   },
   "cashClose": {
     "title": "Cufinsa Kaashii",
@@ -530,7 +538,10 @@
     "branchEmptyTitle": "Damee keetti kuusaan hin jiru",
     "branchEmptyDesc": "Wanti gurguramu hin hafne — hoji-gaggeessaan kuusaa akka raabsu gaafadhu.",
     "dayNotClosedTitle": "Gurgurtaan har'aa ammatti hin cufamne",
-    "dayNotClosedDesc": "Har'a ajaja {{count}} — kaashii dabarsuuf guyyaa cufi."
+    "dayNotClosedDesc": "Har'a ajaja {{count}} — kaashii dabarsuuf guyyaa cufi.",
+    "newOrdersTitle": "Ajajni onlaayinii haaraa {{count}}",
+    "newMessagesTitle": "Ergaan maamilaa haaraa {{count}}",
+    "pendingExpensesTitle": "Baasiin {{count}} mirkaneessa eegaa jira"
   },
   "branchReport": {
     "title": "Gabaasa Damee",
@@ -721,5 +732,32 @@
     "reply": "Deebii",
     "callCustomer": "Bilbili",
     "newMessages": "{{count}} haaraa"
+  },
+  "audit": {
+    "title": "Galmee Sochii",
+    "subtitle": "Sochii sirna guutuu keessaa",
+    "searchPlaceholder": "Nama, gocha ykn bal'ina barbaadi…",
+    "type": "Gosa",
+    "actor": "Kan raawwate",
+    "noActivity": "Ammatti sochiin hin galmoofne.",
+    "showing": "{{total}} keessaa {{shown}} mul'ata",
+    "loadMore": "Dabalata fe'i",
+    "confirmed": "Kuusaatti mirkanaa'e",
+    "notConfirmed": "Ammatti hin mirkanoofne",
+    "saleSummary": "Gurgurtaa meeshaa {{count}}",
+    "distributionSummary": "Sararri {{count}} dameewwanitti raabsame",
+    "cashCloseSummary": "{{branch}}'f guyyaan cufame",
+    "productionSummary": "{{qty}} × {{product}} oomishame",
+    "orderSummary": "Ajaja onlaayinii #{{id}}",
+    "inquirySummary": "Ergaan maamilaa dhufe",
+    "kinds": {
+      "sale": "Gurgurtaa",
+      "distribution": "Raabsa",
+      "cashClose": "Cufinsa Kaashii",
+      "production": "Oomisha",
+      "expense": "Baasii",
+      "order": "Ajaja",
+      "inquiry": "Ergaa"
+    }
   }
 }
