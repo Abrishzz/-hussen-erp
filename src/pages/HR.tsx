@@ -185,7 +185,7 @@ function HRContent() {
         </TabsContent>
         {isOwner && (
           <TabsContent value="approvals">
-            <ApprovalsView employees={employees} />
+            <ApprovalsView />
           </TabsContent>
         )}
       </Tabs>
@@ -777,7 +777,7 @@ function PayrollView({ employees, isOwner }: { employees?: Employee[]; isOwner: 
 }
 
 // ─── Owner-only Approvals tab ───
-function ApprovalsView({ employees }: { employees?: Employee[] }) {
+function ApprovalsView() {
   const { show } = useToast()
   const { data: approvals, isLoading } = useHrApprovals()
   const reviewApproval = useReviewHrApproval()
@@ -807,7 +807,7 @@ function ApprovalsView({ employees }: { employees?: Employee[] }) {
     const p = approval.payload
     switch (approval.type) {
       case 'add_employee':
-        await addEmployee.mutateAsync(p.data as Record<string, unknown>)
+        await addEmployee.mutateAsync(p.data as Omit<Employee, 'id'>)
         break
       case 'edit_employee':
         await updateEmployee.mutateAsync({ id: p.id as string, data: p.data as Record<string, unknown> })

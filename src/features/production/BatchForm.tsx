@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { now } from '@/lib/timestamp'
 import { useRecipes, useRawMaterials, useAddBatch, useUpdateBatch, useUpdateMaterial, useAddMovement } from '@/hooks/useData'
@@ -39,20 +39,40 @@ export function BatchForm({ open, onOpenChange, batch }: BatchFormProps) {
   const [notes, setNotes] = useState(batch?.notes || '')
   const [saving, setSaving] = useState(false)
 
+  // The dialog stays mounted and only `open` toggles, so the useState initial
+  // values are captured once — that's what made "Edit" open a blank form and
+  // reopening keep the previous batch's values. Re-seed whenever it opens.
+  useEffect(() => {
+    if (!open) return
+    setRecipeId(batch?.recipeId || '')
+    setPlannedQty(batch?.plannedQty?.toString() || '')
+    setActualQty(batch?.actualQty?.toString() || batch?.plannedQty?.toString() || '')
+    setNotes(batch?.notes || '')
+  }, [open, batch])
+
   const selectedRecipe = recipes?.find((r) => r.id === recipeId)
 
-  // Check if materials are sufficient
+  // Check if materials are sufficient. Guard against recipes stored without an
+  // `ingredients` array so a bad doc can't crash the form.
   const insufficientMaterials = selectedRecipe
-    ? selectedRecipe.ingredients.filter((ing) => {
+    ? (selectedRecipe.ingredients || []).filter((ing) => {
         const mat = materials?.find((m) => m.id === ing.materialId)
-        const qtyNeeded = ing.qtyPerBatch * (parseInt(plannedQty) || 0) / selectedRecipe.batchYield
+        const qtyNeeded = ing.qtyPerBatch * (parseInt(plannedQty) || 0) / (selectedRecipe.batchYield || 1)
         return !mat || mat.currentQty < qtyNeeded
       })
     : []
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!recipeId || !plannedQty) return
+    // Tell the user why nothing saved instead of silently bailing.
+    if (!recipeId) {
+      showToast(t('production.selectRecipeFirst'), 'destructive')
+      return
+    }
+    if (!plannedQty || parseInt(plannedQty) <= 0) {
+      showToast(t('production.enterPlannedQty'), 'destructive')
+      return
+    }
     setSaving(true)
     try {
       const batchData = {
@@ -78,8 +98,8 @@ export function BatchForm({ open, onOpenChange, batch }: BatchFormProps) {
 
         // Auto-deduct raw materials
         if (selectedRecipe) {
-          const multiplier = batchData.actualQty / selectedRecipe.batchYield
-          for (const ing of selectedRecipe.ingredients) {
+          const multiplier = batchData.actualQty / (selectedRecipe.batchYield || 1)
+          for (const ing of selectedRecipe.ingredients || []) {
             const qtyNeeded = ing.qtyPerBatch * multiplier
             const mat = materials?.find((m) => m.id === ing.materialId)
             if (mat) {

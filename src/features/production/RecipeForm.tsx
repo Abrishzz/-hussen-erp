@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useProducts, useRawMaterials, useAddRecipe, useUpdateRecipe } from '@/hooks/useData'
+import { showToast } from '@/components/ui/toaster'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,6 +35,18 @@ export function RecipeForm({ open, onOpenChange, recipe }: RecipeFormProps) {
   )
   const [saving, setSaving] = useState(false)
 
+  // The dialog stays mounted and only `open` toggles, so the useState initial
+  // values are captured once (while `recipe` was still null) — that's what made
+  // "Edit" open a blank form and reopening keep the previous entry's values.
+  // Re-seed the fields whenever it opens.
+  useEffect(() => {
+    if (!open) return
+    setProductId(recipe?.productId || '')
+    setBatchYield(recipe?.batchYield?.toString() || '1')
+    setInstructions(recipe?.instructions || '')
+    setIngredients(recipe?.ingredients ? [...recipe.ingredients] : [])
+  }, [open, recipe])
+
   const selectedProduct = products?.find((p) => p.id === productId)
 
   const addIngredient = () => {
@@ -61,7 +74,15 @@ export function RecipeForm({ open, onOpenChange, recipe }: RecipeFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!productId || ingredients.length === 0) return
+    // Tell the user why nothing saved instead of silently bailing.
+    if (!productId) {
+      showToast(t('production.selectProductFirst'), 'destructive')
+      return
+    }
+    if (ingredients.length === 0 || ingredients.some((ing) => !ing.materialId)) {
+      showToast(t('production.addIngredientFirst'), 'destructive')
+      return
+    }
     setSaving(true)
     try {
       const data = {
@@ -77,7 +98,10 @@ export function RecipeForm({ open, onOpenChange, recipe }: RecipeFormProps) {
       } else {
         await add.mutateAsync(data)
       }
+      showToast(t('common.success'), 'success')
       onOpenChange(false)
+    } catch {
+      showToast(t('common.error'), 'destructive')
     } finally {
       setSaving(false)
     }
@@ -91,9 +115,9 @@ export function RecipeForm({ open, onOpenChange, recipe }: RecipeFormProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>{t('pos.title')}</Label>
+            <Label>{t('production.product')}</Label>
             <Select value={productId} onValueChange={setProductId}>
-              <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('production.selectProduct')} /></SelectTrigger>
               <SelectContent>
                 {products?.map((p) => (
                   <SelectItem key={p.id} value={p.id}>{p.name_en}</SelectItem>

@@ -37,7 +37,7 @@ export default function Production() {
       <div><p>{i18n.language === 'am' ? r.productName_am : r.productName_en}</p></div>
     )},
     { key: 'yield', header: t('production.batchYield'), cell: (r: Recipe) => `${r.batchYield} pcs` },
-    { key: 'ingredients', header: t('production.ingredients'), cell: (r: Recipe) => r.ingredients.length.toString() },
+    { key: 'ingredients', header: t('production.ingredients'), cell: (r: Recipe) => (r.ingredients?.length ?? 0).toString() },
     { key: 'actions', header: t('common.actions'), cell: (r: Recipe) => (
       <div className="flex gap-1">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditRecipe(r); setRecipeFormOpen(true) }}>
