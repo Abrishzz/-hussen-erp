@@ -24,6 +24,10 @@ interface ProductFormProps {
 
 const EMPTY = { name_en: '', name_am: '', price: '', category: '', imageUrl: '', qty: '' }
 
+// Always-available category suggestions so the chips show even on a fresh
+// database. Any custom category already in use is merged in on top of these.
+const DEFAULT_CATEGORIES = ['Bread', 'Cake', 'Pastry', 'Cookie', 'Drinks', 'Savory']
+
 export function ProductForm({ open, onOpenChange, product }: ProductFormProps) {
   const { t } = useTranslation()
   const add = useAddProduct()
@@ -57,9 +61,15 @@ export function ProductForm({ open, onOpenChange, product }: ProductFormProps) {
     }
   }, [open, product, warehouse])
 
-  // Offer the categories already in use, but the field stays free text so a new
-  // one can just be typed in.
-  const categories = [...new Set((products || []).map((p) => p.category).filter(Boolean))]
+  // Show the default categories plus any custom ones already in use, deduped
+  // case-insensitively. The field stays free text so a new one can be typed in.
+  const usedCategories = (products || []).map((p) => p.category).filter(Boolean) as string[]
+  const categories = [
+    ...DEFAULT_CATEGORIES,
+    ...usedCategories.filter(
+      (c) => !DEFAULT_CATEGORIES.some((d) => d.toLowerCase() === c.toLowerCase())
+    ),
+  ].filter((c, i, arr) => arr.findIndex((x) => x.toLowerCase() === c.toLowerCase()) === i)
 
   const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
