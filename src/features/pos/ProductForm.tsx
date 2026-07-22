@@ -1,6 +1,7 @@
-import { useState, useEffect, useId, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { now } from '@/lib/timestamp'
+import { cn } from '@/lib/utils'
 import { compressToProof } from '@/lib/image'
 import { useToast } from '@/hooks/useToast'
 import {
@@ -31,7 +32,6 @@ export function ProductForm({ open, onOpenChange, product }: ProductFormProps) {
   const { data: products } = useProducts()
   const { data: warehouse } = useWarehouseStock()
   const { show } = useToast()
-  const listId = useId()
   const fileRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
@@ -146,17 +146,35 @@ export function ProductForm({ open, onOpenChange, product }: ProductFormProps) {
 
             <div className="space-y-2">
               <Label>{t('pos.category')}</Label>
-              {/* A datalist keeps this a plain text field (type anything new) while
-                  still suggesting the categories already in use. */}
+              {/* Type a brand-new category, or tap an existing one below to reuse
+                  it — the chips replace the flaky native datalist dropdown. */}
               <Input
-                list={listId}
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 placeholder={t('products.categoryPlaceholder')}
               />
-              <datalist id={listId}>
-                {categories.map((c) => <option key={c} value={c} />)}
-              </datalist>
+              {categories.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {categories.map((c) => {
+                    const active = form.category.trim().toLowerCase() === c.toLowerCase()
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setForm({ ...form, category: c })}
+                        className={cn(
+                          'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                          active
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                        )}
+                      >
+                        {c}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
